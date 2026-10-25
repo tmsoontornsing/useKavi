@@ -1,16 +1,38 @@
+import { Outfit_600SemiBold, Outfit_700Bold, useFonts } from '@expo-google-fonts/outfit';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+
+import { AppStateProvider } from '../state/AppState';
+import { useTheme } from '../theme';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const c = useTheme();
+  const [loaded, error] = useFonts({ Outfit_600SemiBold, Outfit_700Bold });
+
+  useEffect(() => {
+    if (loaded || error) SplashScreen.hideAsync();
+  }, [loaded, error]);
+
+  if (!loaded && !error) return null;
+
   return (
-    <>
+    <AppStateProvider>
       <StatusBar style="auto" />
-      <Stack>
-        <Stack.Screen name="index" options={{ title: 'This week' }} />
-        <Stack.Screen name="onboarding" options={{ title: 'Set up Kavi' }} />
-        <Stack.Screen name="grocery" options={{ title: 'Grocery list' }} />
-        <Stack.Screen name="paywall" options={{ title: 'Kavi Plus', presentation: 'modal' }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="welcome" />
+        <Stack.Screen name="onboarding/diet" />
+        <Stack.Screen name="onboarding/household" />
+        <Stack.Screen name="onboarding/save" />
+        <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="recipe/[id]" />
+        <Stack.Screen name="swap/[day]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
       </Stack>
-    </>
+    </AppStateProvider>
   );
 }
