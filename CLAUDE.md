@@ -43,8 +43,11 @@ Tests: no test runner is configured yet.
 
 - `supabase/migrations/20260101000000_init.sql` creates the core schema: profiles, ingredients (static price table), recipes, recipe_ingredients, meal_plans, meal_plan_items, pantry_items, household_members, grocery_lists, grocery_items, and subscriptions. Every table has RLS enabled. Catalog tables (ingredients and recipes) are readable by authenticated users, and subscription writes happen only through the service role.
 - `supabase/functions/generate-plan/` is the plan engine. `provider.ts` defines the `PlanProvider` interface, the Zod schema, and `parsePlan`, which rejects any recipe ID the model invents. `adapters.ts` holds the Claude adapter (production, `claude-sonnet-5-5`) and the Ollama adapter (dev, `llama3.1:8b`). `providerFromEnv` picks one from `KAVI_PLAN_PROVIDER`, and falls back to Ollama so dev runs don't call the paid API.
-- The Edge Function imports `zod` through `npm:` specifiers, so it targets Deno, not Node.
-- Not built yet: the recipe CSV import script, the RevenueCat and Stripe webhooks, and the grocery aggregation logic.
+- `index.ts` is the Edge Function entry: it reads the caller's profile, enforces one free plan per calendar month (active or trialing subscribers are unlimited), picks candidate recipes, asks the provider for a week, validates it (seven different recipes on days 1 to 7, with one retry), saves it to `meal_plans` and `meal_plan_items`, and returns the plan with estimated costs. `plan-logic.ts` holds the pure decision logic (allergy and diet filters, cost scaling, week validation) and is unit tested.
+- Allergy filtering honours `contains-<allergen>` recipe tags and also matches ingredient names against word lists in `plan-logic.ts`. Treat the word lists as a safety net, and tag recipes in the CSV for anything that matters.
+- The Edge Function and its tests run on Deno: `deno test supabase/functions/generate-plan/` and `deno check supabase/functions/generate-plan/index.ts`. The function has not been run against a live database or deployed yet.
+- `supabase/scripts/import-recipes.ts` loads the catalog from three CSVs (format in `supabase/scripts/README.md`). It runs on Node 23.6+ with no dependencies, and `--dry-run` validates without touching the database. Tests: `node --test supabase/scripts/recipe-csv.test.ts`.
+- Not built yet: the RevenueCat and Stripe webhooks, and the grocery aggregation logic.
 
 ## Product context
 
