@@ -35,7 +35,7 @@ export default function Settings() {
     );
 
   return (
-    <TabScreen header={<AppText variant="largeTitle" accessibilityRole="header">Settings</AppText>}>
+    <TabScreen tab="settings" header={<AppText variant="largeTitle" accessibilityRole="header">Settings</AppText>}>
       <Pressable
         accessibilityRole={app.subscribed ? 'summary' : 'button'}
         disabled={app.subscribed}

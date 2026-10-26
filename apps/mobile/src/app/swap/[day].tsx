@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
 import { MEALS, SWAP_POOL } from '../../data/mock';
+import { haptic, PressableScale } from '../../motion';
 import { modalEdges } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { radius, space, useTheme } from '../../theme';
@@ -50,11 +51,15 @@ export default function Swap() {
               const on = o.id === pick;
               const diff = o.cost - current.cost;
               return (
-                <Pressable
+                <PressableScale
                   key={o.id}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: on }}
-                  onPress={() => setPick(o.id)}
+                  to={0.98}
+                  onPress={() => {
+                    if (!on) haptic.select();
+                    setPick(o.id);
+                  }}
                   style={({ pressed }) => [
                     styles.option,
                     { backgroundColor: c.card, borderColor: on ? c.primary : 'transparent', opacity: pressed ? 0.8 : 1 },
@@ -71,7 +76,7 @@ export default function Swap() {
                       {diff < 0 ? `Saves $${-diff}` : diff === 0 ? 'Same cost' : `$${diff} more`}
                     </AppText>
                   </View>
-                </Pressable>
+                </PressableScale>
               );
             })}
           </View>
@@ -88,6 +93,7 @@ export default function Swap() {
         </View>
         <PrimaryButton
           label="Swap Dinner"
+          feedback="success"
           onPress={() => {
             app.swapMeal(dayIndex, pick);
             router.back();

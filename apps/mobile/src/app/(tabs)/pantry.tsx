@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Image, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { IconButton, TextButton } from '../../components/Buttons';
 import { TabScreen } from '../../components/TabScreen';
+import { animateLayout, haptic, PressableScale, Reveal, Wiggle } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
 
@@ -19,7 +20,11 @@ export default function Pantry() {
   // New items go on the Staples shelf until categories come from the backend.
   const submit = () => {
     const name = draft.trim();
-    if (name) addPantryItem('Staples', name);
+    animateLayout();
+    if (name) {
+      haptic.success();
+      addPantryItem('Staples', name);
+    }
     setDraft('');
     setAdding(false);
   };
@@ -36,6 +41,7 @@ export default function Pantry() {
       </View>
       <AppText variant="subhead">Kavi plans around what’s here and leaves it off your grocery list.</AppText>
       {adding ? (
+        <Reveal>
         <TextInput
           autoFocus
           accessibilityLabel="New pantry item"
@@ -48,31 +54,38 @@ export default function Pantry() {
           returnKeyType="done"
           style={[styles.input, { backgroundColor: c.card, color: c.text, borderColor: c.control }]}
         />
+        </Reveal>
       ) : null}
     </>
   );
 
   return (
-    <TabScreen header={header}>
+    <TabScreen tab="pantry" header={header}>
       {pantry.map((shelf) => (
         <View key={shelf.name} style={styles.shelfGroup}>
           <AppText variant="eyebrow" accessibilityRole="header">{shelf.name}</AppText>
           <View style={styles.items}>
-            {shelf.items.map((item) => (
-              <Pressable
-                key={item}
-                accessibilityRole={editing ? 'button' : 'text'}
-                accessibilityLabel={editing ? `Remove ${item}` : item}
-                disabled={!editing}
-                onPress={() => removePantryItem(shelf.name, item)}
-                style={({ pressed }) => [
-                  styles.item,
-                  { backgroundColor: c.card, borderColor: editing ? c.control : 'transparent', opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <AppText style={styles.itemText}>{item}</AppText>
-                {editing ? <Ionicons name="close" size={14} color={c.text} /> : null}
-              </Pressable>
+            {shelf.items.map((item, i) => (
+              <Wiggle key={item} active={editing} seed={i}>
+                <PressableScale
+                  accessibilityRole={editing ? 'button' : 'text'}
+                  accessibilityLabel={editing ? `Remove ${item}` : item}
+                  disabled={!editing}
+                  to={0.92}
+                  onPress={() => {
+                    haptic.tap();
+                    animateLayout();
+                    removePantryItem(shelf.name, item);
+                  }}
+                  style={({ pressed }) => [
+                    styles.item,
+                    { backgroundColor: c.card, borderColor: editing ? c.control : 'transparent', opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <AppText style={styles.itemText}>{item}</AppText>
+                  {editing ? <Ionicons name="close" size={14} color={c.text} /> : null}
+                </PressableScale>
+              </Wiggle>
             ))}
           </View>
           <Image

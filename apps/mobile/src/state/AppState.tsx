@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { DAYS, DEFAULT_PLAN, MEALS, PANTRY, type DietId, type PlannedMeal, type Shelf } from '../data/mock';
+import { haptic } from '../motion';
 
 // In-memory app state for the frontend build. Supabase replaces this later.
 
@@ -104,6 +105,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           planTimer.current = undefined;
           setMealIds(DEFAULT_PLAN);
           setPlanStatus('ready');
+          haptic.success();
         }, 1500);
       },
       swapMeal: (dayIndex: number, mealId: string) =>

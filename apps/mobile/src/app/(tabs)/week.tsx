@@ -7,6 +7,7 @@ import { AppText } from '../../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
 import { TabScreen } from '../../components/TabScreen';
+import { Reveal } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
 
@@ -25,15 +26,15 @@ export default function Week() {
           <AppText variant="subhead">Oct 27 to Nov 2 · {app.people} people</AppText>
         </View>
       </View>
-      {ready ? <BudgetCard over={over} /> : null}
+      {ready ? <Reveal><BudgetCard over={over} /></Reveal> : null}
     </>
   );
 
   return (
-    <TabScreen header={header}>
+    <TabScreen tab="week" header={header}>
       {app.planStatus === 'loading' ? <LoadingState /> : null}
       {app.planStatus === 'empty' ? (
-        <View style={styles.centered}>
+        <Reveal><View style={styles.centered}>
           <Image source={require('../../../assets/shelves/shelf1.png')} style={styles.shelf} resizeMode="contain" />
           <AppText variant="title" style={styles.center} accessibilityRole="header">No dinners planned yet</AppText>
           <AppText color={c.muted} style={styles.center}>
@@ -41,10 +42,10 @@ export default function Week() {
           </AppText>
           <PrimaryButton label="Plan This Week" onPress={app.generatePlan} />
           <AppText variant="footnote">Free plan: 1 of 1 plans left this month</AppText>
-        </View>
+        </View></Reveal>
       ) : null}
       {app.planStatus === 'error' ? (
-        <View style={styles.centered} accessibilityRole="alert">
+        <Reveal><View style={styles.centered} accessibilityRole="alert">
           <View style={[styles.errorIcon, { backgroundColor: c.warnBg }]}>
             <Ionicons name="cloud-offline-outline" size={26} color={c.warn} />
           </View>
@@ -53,11 +54,12 @@ export default function Week() {
             Kavi can’t reach the internet. Check your connection and try again. Your household settings are saved.
           </AppText>
           <PrimaryButton label="Try Again" onPress={app.generatePlan} />
-        </View>
+        </View></Reveal>
       ) : null}
       {ready
         ? app.plan.map((meal, i) => (
-            <Card key={meal.day} style={styles.meal}>
+            <Reveal key={meal.day} index={i}>
+            <Card style={styles.meal}>
               <AppText variant="eyebrow" style={styles.day}>{meal.day}</AppText>
               <Pressable
                 accessibilityRole="link"
@@ -78,6 +80,7 @@ export default function Week() {
                 onPress={() => router.push({ pathname: '/swap/[day]', params: { day: String(i) } })}
               />
             </Card>
+            </Reveal>
           ))
         : null}
     </TabScreen>

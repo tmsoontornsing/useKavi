@@ -1,15 +1,36 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton } from '../../components/Buttons';
-import { CheckCircle } from '../../components/Controls';
+import { CheckCircle, ProgressBar } from '../../components/Controls';
 import { TabScreen } from '../../components/TabScreen';
 import { GROCERIES, money } from '../../data/mock';
+import { animateLayout, haptic, PressableScale, reduceMotion } from '../../motion';
 import { share as shareText } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
+
+// Chevron that turns over as an aisle opens and closes.
+function Chevron({ open }: { open: boolean }) {
+  const c = useTheme();
+  const turn = useRef(new Animated.Value(open ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (reduceMotion()) {
+      turn.setValue(open ? 1 : 0);
+      return;
+    }
+    Animated.timing(turn, { toValue: open ? 1 : 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [open, turn]);
+
+  return (
+    <Animated.View style={{ transform: [{ rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
+      <Ionicons name="chevron-down" size={18} color={c.muted} />
+    </Animated.View>
+  );
+}
 
 export default function Groceries() {
   const c = useTheme();
@@ -38,6 +59,9 @@ export default function Groceries() {
         <View style={styles.flex}>
           <AppText variant="subhead" color={c.text} style={styles.nums}>{done} of {all.length} items in your cart</AppText>
           <AppText variant="footnote">Estimated total · US average prices</AppText>
+          <View style={styles.cartBar}>
+            <ProgressBar value={done} max={all.length} label={`${done} of ${all.length} items in your cart`} />
+          </View>
         </View>
         <AppText variant="money" style={{ fontSize: 24 }}>{money(total)}</AppText>
       </View>
@@ -45,7 +69,7 @@ export default function Groceries() {
   );
 
   return (
-    <TabScreen header={header}>
+    <TabScreen tab="groceries" header={header}>
       <View style={styles.pantry}>
         <AppText variant="subhead" style={styles.pantryText}>
           On your pantry shelf: rice, olive oil, garlic, and spices. That saves about{' '}
@@ -59,25 +83,34 @@ export default function Groceries() {
         const sub = aisle.items.reduce((s, i) => s + i.price, 0);
         return (
           <Card key={aisle.name} style={styles.aisle}>
-            <Pressable
+            <PressableScale
               accessibilityRole="button"
               accessibilityState={{ expanded: isOpen }}
-              onPress={() => setOpen((o) => ({ ...o, [aisle.name]: !isOpen }))}
+              to={0.99}
+              onPress={() => {
+                haptic.select();
+                animateLayout();
+                setOpen((o) => ({ ...o, [aisle.name]: !isOpen }));
+              }}
               style={({ pressed }) => [styles.aisleHead, { opacity: pressed ? 0.7 : 1 }]}
             >
               <AppText variant="headline" style={styles.flex}>{aisle.name}</AppText>
               <AppText variant="subhead" style={styles.nums}>{aisle.items.length} · {money(sub)}</AppText>
-              <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={c.muted} />
-            </Pressable>
+              <Chevron open={isOpen} />
+            </PressableScale>
             {isOpen
               ? aisle.items.map((item) => {
                   const on = !!checked[item.name];
                   return (
-                    <Pressable
+                    <PressableScale
                       key={item.name}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: on }}
-                      onPress={() => toggleChecked(item.name)}
+                      to={0.98}
+                      onPress={() => {
+                        haptic.tap();
+                        toggleChecked(item.name);
+                      }}
                       style={({ pressed }) => [
                         styles.item,
                         { borderTopColor: c.line, opacity: pressed ? 0.7 : 1 },
@@ -91,7 +124,7 @@ export default function Groceries() {
                         {item.name}
                       </AppText>
                       <AppText variant="subhead" style={styles.nums}>{money(item.price)}</AppText>
-                    </Pressable>
+                    </PressableScale>
                   );
                 })
               : null}
@@ -120,6 +153,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   done: { textDecorationLine: 'line-through' },
+  cartBar: { marginTop: 8 },
   summary: {
     borderRadius: radius.row,
     paddingHorizontal: 14,

@@ -1,0 +1,21 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+
+// Only the anon key ships in the app. Row-level security protects the data, and the
+// service_role key must never appear in client code.
+const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+export const isSupabaseConfigured = Boolean(url && anonKey);
+
+// Null until the env vars are set, so the app can keep running on mock data.
+export const supabase = isSupabaseConfigured
+  ? createClient(url!, anonKey!, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    })
+  : null;
