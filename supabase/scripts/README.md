@@ -41,6 +41,8 @@ quantity x price. Convert to that unit when preparing the data.
 
 ## Tags the plan function understands
 
+- **Meal** (required): `breakfast`, `lunch`, `dinner`. A recipe is only offered for a meal it is tagged for, and
+  can carry several (a soup might be `lunch|dinner`). The importer rejects a recipe with none.
 - **Diet**: `vegan`, `vegetarian`, `pescatarian`, `lowcarb`, `halal`. A recipe is only offered to someone
   on a strict diet if it carries a matching tag (a `vegan` recipe also satisfies vegetarian and pescatarian).
   Untagged recipes are offered only to people on "Everything".

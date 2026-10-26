@@ -14,7 +14,7 @@ import { radius, space, useTheme } from '../theme';
 
 const BENEFITS = [
   'A new plan every week, not just one a month.',
-  'Swap any dinner and see the budget update right away.',
+  'Swap any meal and see the budget update right away.',
   'Share the grocery list with everyone at home.',
   'Plans that use what is already on your pantry shelf.',
 ];

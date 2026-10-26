@@ -1,6 +1,7 @@
 # Starter catalog (DRAFT, needs review)
 
-42 dinner recipes, 88 ingredients, 371 recipe lines, drafted so the app and plan function have
+63 recipes (17 breakfast, 24 lunch, 42 dinner; some serve more than one meal), 104 ingredients, 490 recipe
+lines, drafted so the app and plan function have
 something real to run on. **Nothing here has been checked against a store or a nutrition source.**
 
 ```bash
@@ -19,7 +20,7 @@ node supabase/scripts/import-recipes.ts supabase/catalog/starter             # i
   - `contains-*` comes from the ingredients (soy sauce counts as soy and gluten; egg noodles as gluten and eggs).
   - `vegan` means no meat, fish, dairy, eggs or honey. `vegetarian` means no meat or fish.
     `pescatarian` means no meat. `lowcarb` means no pasta, rice, bread, tortilla, dough, noodle or potato
-    ingredient, matching the "fewer pasta, rice, and bread dinners" wording in the app.
+    ingredient, matching the "fewer pasta, rice, and bread meals" wording in the app.
   - `halal` means no pork and no alcohol. It assumes the meat is bought halal. Nothing here checks that.
   - Processed items (broth, salsa, marinara, soy sauce) are assumed free of other allergens. Real
     products vary, so this is a place a human should look.
@@ -28,5 +29,12 @@ node supabase/scripts/import-recipes.ts supabase/catalog/starter             # i
   Re-check them if you edit steps. Only stovetop, oven, slow cooker and blender are used so far, so
   ticking air fryer, grill and the rest does not change any plan until recipes need them.
 - Nothing contains peanuts, and only one recipe contains tree nuts, so those two allergies barely filter yet.
-- Vegan has only 9 recipes and `vegan + gluten allergy` has exactly 7, so those users will see repeats.
-  More vegan dinners are the first thing worth adding.
+- Vegan has 5 breakfasts, 9 lunches and 9 dinners, and `vegan + gluten allergy` is exactly at the minimum
+  (3 / 7 / 7), so those users will see repeats. More vegan recipes are the first thing worth adding.
+- **Meal tags (`breakfast`, `lunch`, `dinner`)**: a recipe can carry several, and the importer requires at least
+  one. I tagged soups, salads, bowls and pitas that also work as lunch, and a few egg dishes as breakfast.
+- **Oats are flagged `contains-gluten`**, because ordinary oats are usually cross-contaminated. Swap in
+  certified gluten-free oats and remove the flag if you want them offered to gluten-free households.
+- **Planning limits per week**: dinners all different, lunches up to 2 uses of a recipe, breakfasts up to 3.
+  That needs at least 7 dinners, 4 lunches and 3 breakfasts left after a household's filters.
+- A typical week for 4 people (21 meals) comes to about $208 at the draft prices.

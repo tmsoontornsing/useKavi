@@ -49,7 +49,7 @@ export default function Household() {
     >
       <Card style={styles.rowCard}>
         <View style={styles.flex}>
-          <AppText variant="headline">People eating dinner</AppText>
+          <AppText variant="headline">People eating</AppText>
           <AppText variant="subhead">Adults and kids</AppText>
         </View>
         <View style={styles.stepper}>

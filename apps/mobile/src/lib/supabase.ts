@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 
 // Only the anon key ships in the app. Row-level security protects the data, and the
 // service_role key must never appear in client code.
@@ -19,3 +20,11 @@ export const supabase = isSupabaseConfigured
       },
     })
   : null;
+
+// Refresh the session only while the app is in the foreground, as Supabase recommends for React Native.
+if (supabase) {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') supabase.auth.startAutoRefresh();
+    else supabase.auth.stopAutoRefresh();
+  });
+}

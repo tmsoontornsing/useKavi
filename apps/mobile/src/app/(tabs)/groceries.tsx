@@ -6,7 +6,7 @@ import { AppText } from '../../components/AppText';
 import { Card, IconButton } from '../../components/Buttons';
 import { CheckCircle, ProgressBar } from '../../components/Controls';
 import { TabScreen } from '../../components/TabScreen';
-import { GROCERIES, money } from '../../data/mock';
+import { money } from '../../data/mock';
 import { animateLayout, haptic, PressableScale, reduceMotion } from '../../motion';
 import { share as shareText } from '../../navigation';
 import { useApp } from '../../state/AppState';
@@ -34,16 +34,19 @@ function Chevron({ open }: { open: boolean }) {
 
 export default function Groceries() {
   const c = useTheme();
-  const { checked, toggleChecked } = useApp();
+  const { checked, toggleChecked, groceries, groceryTotal, pantrySavings, pantry } = useApp();
   const [open, setOpen] = useState<Record<string, boolean>>({ Produce: true });
 
-  const all = GROCERIES.flatMap((a) => a.items);
-  const done = all.filter((i) => checked[i.name]).length;
-  const total = all.reduce((s, i) => s + i.price, 0);
+  const all = groceries.flatMap((a) => a.items);
+  const done = all.filter((i) => checked[i.key]).length;
+  const total = groceryTotal;
+  // A short, readable summary of the shelf: the first few items, then "and more".
+  const shelf = pantry.flatMap((s) => s.items).map((i) => i.toLowerCase());
+  const shelfText = shelf.length <= 3 ? shelf.join(', ') : `${shelf.slice(0, 3).join(', ')}, and more`;
 
   const share = () => {
-    const text = GROCERIES.map(
-      (a) => `${a.name}\n${a.items.map((i) => `${checked[i.name] ? '✓' : '•'} ${i.name}`).join('\n')}`,
+    const text = groceries.map(
+      (a) => `${a.name}\n${a.items.map((i) => `${checked[i.key] ? '✓' : '•'} ${i.name}`).join('\n')}`,
     ).join('\n\n');
     shareText(`Kavi grocery list\n\n${text}`);
   };
@@ -72,13 +75,24 @@ export default function Groceries() {
     <TabScreen tab="groceries" header={header}>
       <View style={styles.pantry}>
         <AppText variant="subhead" style={styles.pantryText}>
-          On your pantry shelf: rice, olive oil, garlic, and spices. That saves about{' '}
-          <AppText variant="subhead" color={c.text} weight="700">$17.80</AppText> this week.
+          {shelf.length === 0 ? 'Add what you already have in Pantry and it comes off this list.' : `On your pantry shelf: ${shelfText}.`}
+          {pantrySavings > 0 ? (
+            <>
+              {' That saves about '}
+              <AppText variant="subhead" color={c.text} weight="700">{money(pantrySavings)}</AppText> this week.
+            </>
+          ) : null}
         </AppText>
         <Image source={require('../../../assets/shelves/shelf1.png')} style={styles.shelf} resizeMode="stretch" />
       </View>
 
-      {GROCERIES.map((aisle) => {
+      {all.length === 0 ? (
+        <Card style={styles.emptyList}>
+          <AppText color={c.muted}>Your list fills in when you plan a week. Items already on your pantry shelf are left off.</AppText>
+        </Card>
+      ) : null}
+
+      {groceries.map((aisle) => {
         const isOpen = !!open[aisle.name];
         const sub = aisle.items.reduce((s, i) => s + i.price, 0);
         return (
@@ -100,16 +114,16 @@ export default function Groceries() {
             </PressableScale>
             {isOpen
               ? aisle.items.map((item) => {
-                  const on = !!checked[item.name];
+                  const on = !!checked[item.key];
                   return (
                     <PressableScale
-                      key={item.name}
+                      key={item.key}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: on }}
                       to={0.98}
                       onPress={() => {
                         haptic.tap();
-                        toggleChecked(item.name);
+                        toggleChecked(item.key);
                       }}
                       style={({ pressed }) => [
                         styles.item,
@@ -153,6 +167,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   done: { textDecorationLine: 'line-through' },
+  emptyList: { padding: 16 },
   cartBar: { marginTop: 8 },
   summary: {
     borderRadius: radius.row,

@@ -30,9 +30,13 @@ export default function Settings() {
         {
           text: 'Delete Account',
           style: 'destructive',
-          onPress: () => {
-            app.signOut();
-            resetTo('/welcome');
+          onPress: async () => {
+            try {
+              await app.deleteAccount();
+              resetTo('/welcome');
+            } catch (e) {
+              Alert.alert('Couldn’t delete your account', (e as Error).message);
+            }
           },
         },
       ],
@@ -59,7 +63,7 @@ export default function Settings() {
       </Pressable>
 
       <Section title="Household">
-        <LinkRow label="People eating dinner" value={String(app.people)} href="/onboarding/household?edit=1" first />
+        <LinkRow label="People eating" value={String(app.people)} href="/onboarding/household?edit=1" first />
         <LinkRow label="Weekly budget" value={`$${app.budget}`} href="/onboarding/household?edit=1" />
         <LinkRow label="Diet" value={dietName} href="/onboarding/diet?edit=1" />
         <LinkRow label="Allergies" value={app.allergies.join(', ') || 'None'} href="/onboarding/household?edit=1" />
@@ -95,13 +99,12 @@ export default function Settings() {
         title="Account"
         footer="Deleting your account removes your household, plans, and lists. Subscriptions are managed in your App Store or Google Play settings."
       >
-        <StaticRow label="Signed in with" value="Apple" first />
+        <StaticRow label="Account" value={app.live ? (app.email ?? 'Signed in') : 'Example data, not saved'} first />
         <ActionRow label="Restore Purchases" onPress={() => Alert.alert('No purchases found', 'There’s nothing to restore on this account.')} />
         <ActionRow
           label="Sign Out"
           onPress={() => {
-            app.signOut();
-            resetTo('/welcome');
+            app.signOut().finally(() => resetTo('/welcome'));
           }}
         />
         <ActionRow label="Delete Account" danger onPress={confirmDelete} />

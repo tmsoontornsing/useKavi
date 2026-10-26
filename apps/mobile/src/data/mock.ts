@@ -1,13 +1,24 @@
 // Example data from the mockups. It stands in for Supabase until the backend is wired up.
 
+export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
+export type MealType = (typeof MEAL_TYPES)[number];
+export const MEAL_LABELS: Record<MealType, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' };
+
 export type Meal = {
   id: string;
   name: string;
+  type: MealType;
   minutes: string;
   cost: number;
 };
 
-export type PlannedMeal = Meal & { day: string; dayLong: string };
+// A meal placed in the week. `slot` is its position in the 21-slot plan: day * 3 + the meal type's order.
+// `appliances` is the equipment it needs, so the week can flag anything the household lacks.
+export type PlannedMeal = Meal & { day: string; dayLong: string; slot: number; appliances: string[] };
+
+// A grocery list line. `key` identifies it for checking off: the line text here, the database row id when live.
+export type GroceryItem = { key: string; name: string; price: number };
+export type GroceryAisle = { name: string; items: GroceryItem[] };
 
 export const DAYS = [
   ['Mon', 'Monday'],
@@ -20,24 +31,59 @@ export const DAYS = [
 ] as const;
 
 export const MEALS: Record<string, Meal> = {
-  fajitas: { id: 'fajitas', name: 'Sheet-pan chicken fajitas', minutes: '30 min', cost: 16 },
-  tacos: { id: 'tacos', name: 'Black bean and sweet potato tacos', minutes: '25 min', cost: 11 },
-  spaghetti: { id: 'spaghetti', name: 'Spaghetti with turkey meatballs', minutes: '35 min', cost: 15 },
-  friedrice: { id: 'friedrice', name: 'Veggie fried rice with eggs', minutes: '20 min', cost: 9 },
-  pizza: { id: 'pizza', name: 'Homemade margherita pizza', minutes: '40 min', cost: 14 },
-  chili: { id: 'chili', name: 'Slow-cooker beef chili', minutes: '15 min prep', cost: 21 },
-  salmon: { id: 'salmon', name: 'Lemon garlic salmon with broccoli', minutes: '25 min', cost: 26 },
-  pesto: { id: 'pesto', name: 'Chicken pesto pasta', minutes: '25 min', cost: 13 },
-  bowls: { id: 'bowls', name: 'Turkey taco bowls', minutes: '20 min', cost: 14 },
-  ziti: { id: 'ziti', name: 'Baked ziti with spinach', minutes: '45 min', cost: 17 },
-  lentil: { id: 'lentil', name: 'Lentil soup with crusty bread', minutes: '40 min', cost: 8 },
+  // Breakfast. Costs are per use for the household, not whole packages.
+  oats: { id: 'oats', name: 'Overnight oats with berries', type: 'breakfast', minutes: '5 min prep', cost: 4 },
+  eggtoast: { id: 'eggtoast', name: 'Spinach scramble on toast', type: 'breakfast', minutes: '15 min', cost: 5 },
+  parfait: { id: 'parfait', name: 'Yogurt and granola parfaits', type: 'breakfast', minutes: '5 min', cost: 5 },
+  pancakes: { id: 'pancakes', name: 'Banana pancakes', type: 'breakfast', minutes: '20 min', cost: 4 },
+  burritos: { id: 'burritos', name: 'Egg and bean breakfast burritos', type: 'breakfast', minutes: '20 min', cost: 6 },
+  avotoast: { id: 'avotoast', name: 'Avocado toast with eggs', type: 'breakfast', minutes: '10 min', cost: 5 },
+  appleoats: { id: 'appleoats', name: 'Cinnamon apple oatmeal', type: 'breakfast', minutes: '15 min', cost: 3 },
+  smoothie: { id: 'smoothie', name: 'Berry yogurt smoothies', type: 'breakfast', minutes: '5 min', cost: 5 },
+  // Lunch
+  wraps: { id: 'wraps', name: 'Turkey and avocado wraps', type: 'lunch', minutes: '10 min', cost: 10 },
+  tunasalad: { id: 'tunasalad', name: 'Tuna and chickpea salad', type: 'lunch', minutes: '15 min', cost: 8 },
+  quesadilla: { id: 'quesadilla', name: 'Black bean quesadillas', type: 'lunch', minutes: '20 min', cost: 8 },
+  chickensand: { id: 'chickensand', name: 'Chicken salad sandwiches', type: 'lunch', minutes: '15 min', cost: 8 },
+  tomatosoup: { id: 'tomatosoup', name: 'Tomato soup with grilled cheese', type: 'lunch', minutes: '35 min', cost: 9 },
+  hummus: { id: 'hummus', name: 'Hummus and veggie pitas', type: 'lunch', minutes: '10 min', cost: 8 },
+  noodlesoup: { id: 'noodlesoup', name: 'Chicken noodle soup', type: 'lunch', minutes: '40 min', cost: 9 },
+  burritobowl: { id: 'burritobowl', name: 'Black bean burrito bowls', type: 'lunch', minutes: '25 min', cost: 11 },
+  // Dinner
+  fajitas: { id: 'fajitas', name: 'Sheet-pan chicken fajitas', type: 'dinner', minutes: '30 min', cost: 16 },
+  tacos: { id: 'tacos', name: 'Black bean and sweet potato tacos', type: 'dinner', minutes: '25 min', cost: 11 },
+  spaghetti: { id: 'spaghetti', name: 'Spaghetti with turkey meatballs', type: 'dinner', minutes: '35 min', cost: 15 },
+  friedrice: { id: 'friedrice', name: 'Veggie fried rice with eggs', type: 'dinner', minutes: '20 min', cost: 9 },
+  pizza: { id: 'pizza', name: 'Homemade margherita pizza', type: 'dinner', minutes: '40 min', cost: 14 },
+  chili: { id: 'chili', name: 'Slow-cooker beef chili', type: 'dinner', minutes: '15 min prep', cost: 21 },
+  salmon: { id: 'salmon', name: 'Lemon garlic salmon with broccoli', type: 'dinner', minutes: '25 min', cost: 26 },
+  pesto: { id: 'pesto', name: 'Chicken pesto pasta', type: 'dinner', minutes: '25 min', cost: 13 },
+  bowls: { id: 'bowls', name: 'Turkey taco bowls', type: 'dinner', minutes: '20 min', cost: 14 },
+  ziti: { id: 'ziti', name: 'Baked ziti with spinach', type: 'dinner', minutes: '45 min', cost: 17 },
+  lentil: { id: 'lentil', name: 'Lentil soup with crusty bread', type: 'dinner', minutes: '40 min', cost: 8 },
 };
 
-export const DEFAULT_PLAN = ['fajitas', 'tacos', 'spaghetti', 'friedrice', 'pizza', 'chili', 'salmon'];
+// The default week, Monday to Sunday. Dinners are all different; breakfasts and lunches repeat.
+export const DEFAULT_PLAN: Record<MealType, string[]> = {
+  breakfast: ['oats', 'eggtoast', 'parfait', 'oats', 'burritos', 'pancakes', 'eggtoast'],
+  lunch: ['wraps', 'tunasalad', 'quesadilla', 'chickensand', 'tomatosoup', 'wraps', 'quesadilla'],
+  dinner: ['fajitas', 'tacos', 'spaghetti', 'friedrice', 'pizza', 'chili', 'salmon'],
+};
 
-export const SWAP_POOL = ['pesto', 'bowls', 'ziti', 'lentil'];
+// Meal ids in plan order: Monday breakfast, lunch, dinner, then Tuesday, and so on.
+export const DEFAULT_SLOTS: string[] = Array.from(
+  { length: 21 },
+  (_, slot) => DEFAULT_PLAN[MEAL_TYPES[slot % 3]][Math.floor(slot / 3)],
+);
 
-// Kitchen equipment a household can say it has. Dinners that need something a household lacks are flagged.
+// Alternatives offered when swapping, by meal type.
+export const SWAP_POOL: Record<MealType, string[]> = {
+  breakfast: ['avotoast', 'appleoats', 'smoothie'],
+  lunch: ['hummus', 'noodlesoup', 'burritobowl'],
+  dinner: ['pesto', 'bowls', 'ziti', 'lentil'],
+};
+
+// Kitchen equipment a household can say it has. Meals that need something a household lacks are flagged.
 export const APPLIANCES = [
   { id: 'stovetop', name: 'Stovetop', detail: 'Burners for pots and pans' },
   { id: 'oven', name: 'Oven', detail: 'For roasting and baking' },
@@ -62,6 +108,9 @@ export type RecipeDetail = {
   ingredients: { name: string; price: number | 'pantry' }[];
   steps: string[];
 };
+
+// What the recipe screen shows: the meal, and its ingredients and steps when they are available.
+export type RecipeView = { meal: Meal; detail: RecipeDetail | null };
 
 export const RECIPES: Record<string, RecipeDetail> = {
   fajitas: {
@@ -135,6 +184,13 @@ export const RECIPES: Record<string, RecipeDetail> = {
       { name: 'Eggs, 1 dozen', price: 3.29 },
       { name: 'Peas, 12 oz', price: 1.79 },
       { name: 'Soy sauce, 10 oz', price: 2.49 },
+      { name: 'Rolled oats, 18 oz', price: 3.49 },
+      { name: 'Pancake mix, 2 lb', price: 2.99 },
+      { name: 'Sandwich bread, 1 loaf', price: 2.49 },
+      { name: 'Granola, 12 oz', price: 3.99 },
+      { name: 'Maple syrup, 12 oz', price: 4.49 },
+      { name: 'Chickpeas, 2 cans', price: 2.38 },
+      { name: 'Canned tuna, 3 cans', price: 3.87 },
       { name: 'Green onions, 1 bunch', price: 0.99 },
       { name: 'Rice, 2 cups uncooked', price: 'pantry' },
       { name: 'Olive oil, 2 tbsp', price: 'pantry' },
@@ -195,10 +251,15 @@ export const RECIPES: Record<string, RecipeDetail> = {
     appliances: ['oven'],
     ingredients: [
       { name: 'Salmon fillets, 1.25 lb', price: 12.49 },
+      { name: 'Deli turkey, 12 oz', price: 4.99 },
+      { name: 'Rotisserie chicken, 1', price: 5.99 },
       { name: 'Broccoli crowns, 1.5 lb', price: 2.97 },
       { name: 'Sweet potatoes, 2 lb', price: 2.98 },
       { name: 'Lemons, 2', price: 1.38 },
       { name: 'Butter, 1 lb', price: 4.42 },
+      { name: 'Plain yogurt, 32 oz', price: 4.49 },
+      { name: 'Milk, ½ gallon', price: 2.19 },
+      { name: 'Shredded cheddar, 16 oz', price: 5.98 },
       { name: 'Fresh parsley, 1 bunch', price: 1.29 },
       { name: 'Garlic, 3 cloves', price: 'pantry' },
       { name: 'Olive oil, 2 tbsp', price: 'pantry' },
@@ -294,6 +355,277 @@ export const RECIPES: Record<string, RecipeDetail> = {
       'Taste, adjust the salt, and serve with the bread.',
     ],
   },
+
+  // Breakfast and lunch. Prices are for the portion used, since a package is shared across several meals.
+  oats: {
+    serves: 4,
+    appliances: [],
+    ingredients: [
+      { name: 'Rolled oats, 2 cups', price: 0.9 },
+      { name: 'Milk, 2 cups', price: 0.5 },
+      { name: 'Plain yogurt, 1 cup', price: 0.6 },
+      { name: 'Frozen berries, 1 cup', price: 1.6 },
+      { name: 'Sugar, 2 tbsp', price: 'pantry' },
+    ],
+    steps: [
+      'Stir the oats, milk, yogurt, and sugar together in a large jar or bowl.',
+      'Cover and refrigerate overnight, at least 6 hours.',
+      'In the morning, loosen with a splash of milk if it is thick, then top with the berries.',
+    ],
+  },
+  eggtoast: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Eggs, 8', price: 2.19 },
+      { name: 'Sandwich bread, 8 slices', price: 1.0 },
+      { name: 'Baby spinach, 2 cups', price: 1.5 },
+      { name: 'Butter, 2 tbsp', price: 0.4 },
+      { name: 'Salt, a pinch', price: 'pantry' },
+    ],
+    steps: [
+      'Whisk the eggs with a pinch of salt.',
+      'Melt 1 tablespoon of butter in a nonstick pan over medium-low heat and wilt the spinach for 1 minute.',
+      'Pour in the eggs and stir gently until just set, about 3 minutes.',
+      'Toast the bread, butter it with the rest of the butter, and top with the eggs.',
+    ],
+  },
+  parfait: {
+    serves: 4,
+    appliances: [],
+    ingredients: [
+      { name: 'Plain yogurt, 4 cups', price: 2.4 },
+      { name: 'Granola, 1 cup', price: 0.9 },
+      { name: 'Bananas, 2', price: 0.5 },
+      { name: 'Frozen berries, 1 cup', price: 1.6 },
+    ],
+    steps: [
+      'Slice the bananas.',
+      'Layer the yogurt, granola, berries, and banana in four glasses or bowls.',
+      'Serve right away so the granola stays crunchy.',
+    ],
+  },
+  pancakes: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Pancake mix, 2 cups', price: 1.0 },
+      { name: 'Eggs, 1', price: 0.27 },
+      { name: 'Milk, 1 cup', price: 0.25 },
+      { name: 'Bananas, 3', price: 0.75 },
+      { name: 'Maple syrup, ¼ cup', price: 1.5 },
+    ],
+    steps: [
+      'Whisk the mix, egg, and milk until just combined. A few lumps are fine.',
+      'Heat a lightly oiled pan over medium heat and pour in ¼ cup of batter per pancake.',
+      'Flip when bubbles form and the edges look set, about 2 minutes a side.',
+      'Serve with sliced banana and syrup.',
+    ],
+  },
+  burritos: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Eggs, 6', price: 1.65 },
+      { name: 'Flour tortillas, 4', price: 1.3 },
+      { name: 'Black beans, 1 can', price: 1.09 },
+      { name: 'Shredded cheddar, 4 oz', price: 1.0 },
+      { name: 'Salsa, ¼ jar', price: 0.9 },
+    ],
+    steps: [
+      'Warm the beans in a small pot and mash them lightly.',
+      'Scramble the eggs in a pan until just set.',
+      'Warm the tortillas and fill with the eggs, beans, cheddar, and salsa.',
+      'Fold in the sides and roll up tightly.',
+    ],
+  },
+  avotoast: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Sandwich bread, 8 slices', price: 1.0 },
+      { name: 'Avocados, 2', price: 2.5 },
+      { name: 'Eggs, 4', price: 1.1 },
+      { name: 'Lemons, 1', price: 0.69 },
+      { name: 'Salt, a pinch', price: 'pantry' },
+    ],
+    steps: [
+      'Toast the bread.',
+      'Mash the avocados with the lemon juice and a pinch of salt and spread on the toast.',
+      'Fry the eggs in a lightly oiled pan until the whites are set.',
+      'Top each toast with an egg.',
+    ],
+  },
+  appleoats: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Rolled oats, 2 cups', price: 0.9 },
+      { name: 'Milk, 2 cups', price: 0.5 },
+      { name: 'Apples, 2', price: 1.2 },
+      { name: 'Cinnamon, 1 tsp', price: 'pantry' },
+      { name: 'Sugar, 1 tbsp', price: 'pantry' },
+    ],
+    steps: [
+      'Dice the apples.',
+      'Simmer the oats, milk, 1 cup of water, and the apples for 8 to 10 minutes, stirring often.',
+      'Stir in the cinnamon and sugar and serve warm.',
+    ],
+  },
+  smoothie: {
+    serves: 4,
+    appliances: ['blender'],
+    ingredients: [
+      { name: 'Frozen berries, 2 cups', price: 3.2 },
+      { name: 'Bananas, 2', price: 0.5 },
+      { name: 'Plain yogurt, 1 cup', price: 0.6 },
+      { name: 'Milk, 1 cup', price: 0.25 },
+    ],
+    steps: [
+      'Put the milk, yogurt, banana, and berries in the blender, in that order.',
+      'Blend until smooth, about 1 minute, adding milk if it is too thick.',
+      'Pour into four glasses.',
+    ],
+  },
+  wraps: {
+    serves: 4,
+    appliances: [],
+    ingredients: [
+      { name: 'Flour tortillas, 4', price: 1.3 },
+      { name: 'Deli turkey, 12 oz', price: 4.99 },
+      { name: 'Avocados, 2', price: 2.5 },
+      { name: 'Baby spinach, 2 cups', price: 1.0 },
+      { name: 'Tomato, 1', price: 0.7 },
+      { name: 'Salt, a pinch', price: 'pantry' },
+    ],
+    steps: [
+      'Mash the avocados with a pinch of salt and spread over the tortillas.',
+      'Layer on the turkey, spinach, and sliced tomato.',
+      'Roll up tightly, tucking in the sides, and cut in half.',
+    ],
+  },
+  tunasalad: {
+    serves: 4,
+    appliances: [],
+    ingredients: [
+      { name: 'Canned tuna, 3 cans', price: 3.87 },
+      { name: 'Chickpeas, 2 cans', price: 2.38 },
+      { name: 'Cucumbers, 1', price: 0.89 },
+      { name: 'Red onion, ½', price: 0.6 },
+      { name: 'Lemons, 1', price: 0.69 },
+      { name: 'Olive oil, 2 tbsp', price: 'pantry' },
+    ],
+    steps: [
+      'Drain the tuna and chickpeas.',
+      'Dice the cucumber and onion.',
+      'Toss everything with the olive oil, the juice of 1 lemon, and a pinch of salt.',
+      'Serve as it is, over greens, or with crackers.',
+    ],
+  },
+  quesadilla: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Flour tortillas, 8', price: 2.63 },
+      { name: 'Shredded cheddar, 8 oz', price: 2.99 },
+      { name: 'Black beans, 1 can', price: 1.09 },
+      { name: 'Bell pepper, 1', price: 1.25 },
+    ],
+    steps: [
+      'Slice the pepper and soften it in a pan, about 3 minutes.',
+      'Cover half of each tortilla with cheese, beans, and pepper, then fold over.',
+      'Cook in a lightly oiled pan 2 to 3 minutes a side, until golden and melted.',
+      'Cut into wedges.',
+    ],
+  },
+  chickensand: {
+    serves: 4,
+    appliances: [],
+    ingredients: [
+      { name: 'Rotisserie chicken, 1', price: 5.99 },
+      { name: 'Sandwich bread, 8 slices', price: 1.0 },
+      { name: 'Celery, 2 stalks', price: 0.5 },
+      { name: 'Plain yogurt, ½ cup', price: 0.3 },
+      { name: 'Mayonnaise, 3 tbsp', price: 'pantry' },
+      { name: 'Salt and pepper', price: 'pantry' },
+    ],
+    steps: [
+      'Shred the chicken, discarding the skin.',
+      'Mix with the chopped celery, mayonnaise, yogurt, salt, and pepper.',
+      'Pile onto the bread and close the sandwiches.',
+    ],
+  },
+  tomatosoup: {
+    serves: 4,
+    appliances: ['stovetop', 'blender'],
+    ingredients: [
+      { name: 'Crushed tomatoes, 2 cans', price: 3.58 },
+      { name: 'Shredded cheddar, 8 oz', price: 2.99 },
+      { name: 'Sandwich bread, 8 slices', price: 1.0 },
+      { name: 'Yellow onion, 1', price: 0.87 },
+      { name: 'Butter, 2 tbsp', price: 0.4 },
+      { name: 'Milk, ½ cup', price: 0.12 },
+      { name: 'Garlic, 2 cloves', price: 'pantry' },
+      { name: 'Olive oil, 1 tbsp', price: 'pantry' },
+    ],
+    steps: [
+      'Soften the diced onion and garlic in the olive oil, about 5 minutes.',
+      'Add the tomatoes and 1 cup of water, simmer 15 minutes, then blend smooth and stir in the milk.',
+      'Butter the bread, fill with the cheddar, and cook in a pan until golden on both sides.',
+      'Serve the soup with the sandwiches.',
+    ],
+  },
+  hummus: {
+    serves: 4,
+    appliances: [],
+    ingredients: [
+      { name: 'Hummus, 10 oz', price: 3.29 },
+      { name: 'Pita bread, 4', price: 2.19 },
+      { name: 'Cucumbers, 1', price: 0.89 },
+      { name: 'Baby carrots, 1 bag', price: 1.49 },
+    ],
+    steps: [
+      'Slice the cucumber and cut the pitas in half.',
+      'Spread the hummus inside the pitas.',
+      'Stuff with cucumber and serve with the carrots on the side.',
+    ],
+  },
+  noodlesoup: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Chicken breast, 1 lb', price: 4.49 },
+      { name: 'Egg noodles, 8 oz', price: 1.25 },
+      { name: 'Carrots, ¾ lb', price: 0.97 },
+      { name: 'Celery, 1 bunch', price: 1.49 },
+      { name: 'Yellow onion, 1', price: 0.87 },
+      { name: 'Chicken broth, 8 cups', price: 'pantry' },
+    ],
+    steps: [
+      'Simmer the chicken in the broth with the chopped carrots, celery, and onion for 20 minutes.',
+      'Lift out the chicken, shred it, and return it to the pot.',
+      'Add the noodles and cook until tender, about 7 minutes.',
+      'Season with salt and pepper and serve.',
+    ],
+  },
+  burritobowl: {
+    serves: 4,
+    appliances: ['stovetop'],
+    ingredients: [
+      { name: 'Black beans, 2 cans', price: 2.18 },
+      { name: 'Avocados, 2', price: 2.5 },
+      { name: 'Sweet corn, 12 oz', price: 1.79 },
+      { name: 'Salsa, 1 jar', price: 3.49 },
+      { name: 'Limes, 2', price: 1.38 },
+      { name: 'Rice, 2 cups uncooked', price: 'pantry' },
+    ],
+    steps: [
+      'Cook the rice.',
+      'Warm the beans and corn together in a small pot.',
+      'Build the bowls with rice, beans and corn, sliced avocado, and salsa.',
+      'Finish with a squeeze of lime.',
+    ],
+  },
 };
 
 export type Aisle = { name: string; items: { name: string; price: number }[] };
@@ -308,6 +640,9 @@ export const GROCERIES: Aisle[] = [
       { name: 'Broccoli crowns, 1.5 lb', price: 2.97 },
       { name: 'Lemons, 2', price: 1.38 },
       { name: 'Cilantro, 1 bunch', price: 0.85 },
+      { name: 'Bananas, 1 bunch', price: 1.74 },
+      { name: 'Avocados, 4', price: 4.0 },
+      { name: 'Baby spinach, 10 oz', price: 2.99 },
     ],
   },
   {
@@ -348,6 +683,7 @@ export const GROCERIES: Aisle[] = [
       { name: 'Mixed vegetables, 2 bags', price: 4.58 },
       { name: 'Peas, 12 oz', price: 1.79 },
       { name: 'Sweet corn, 12 oz', price: 1.79 },
+      { name: 'Mixed berries, 24 oz', price: 6.58 },
     ],
   },
 ];
@@ -361,11 +697,11 @@ export const PANTRY: Shelf[] = [
 ];
 
 export const DIETS = [
-  { id: 'any', name: 'Everything', detail: 'Meat, fish, and vegetarian dinners' },
+  { id: 'any', name: 'Everything', detail: 'Meat, fish, and vegetarian meals' },
   { id: 'vegetarian', name: 'Vegetarian', detail: 'No meat or fish' },
   { id: 'pescatarian', name: 'Pescatarian', detail: 'Fish and seafood, no other meat' },
   { id: 'vegan', name: 'Vegan', detail: 'No animal products' },
-  { id: 'lowcarb', name: 'Lower carb', detail: 'Fewer pasta, rice, and bread dinners' },
+  { id: 'lowcarb', name: 'Lower carb', detail: 'Fewer pasta, rice, and bread meals' },
   { id: 'halal', name: 'Halal', detail: 'Halal meat only, no pork' },
 ] as const;
 

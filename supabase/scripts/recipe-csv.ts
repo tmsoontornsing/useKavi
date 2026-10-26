@@ -10,6 +10,9 @@ export type Catalog = {
   recipeIngredients: RecipeIngredientRow[];
 };
 
+// Every recipe needs at least one of these tags: the meals it can be planned for.
+export const MEAL_TAGS = ['breakfast', 'lunch', 'dinner'] as const;
+
 // Case- and spacing-insensitive key for matching names across files.
 export const key = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -137,10 +140,14 @@ export function parseCatalog(files: { ingredients: string; recipes: string; reci
     if (!v.steps) errors.push(`${where}: steps is empty`);
     if (!Number.isInteger(servings) || servings <= 0) errors.push(`${where}: servings must be a whole number above 0, got "${v.servings}"`);
     if (!Number.isInteger(minutes) || minutes <= 0) errors.push(`${where}: minutes must be a whole number above 0, got "${v.minutes}"`);
+    const tags = [...new Set((v.tags ?? '').split('|').map(key).filter(Boolean))];
+    // The plan function only offers a recipe for a meal it is tagged for, so an untagged one would never be planned.
+    if (v.title && !tags.some((t) => (MEAL_TAGS as readonly string[]).includes(t))) {
+      errors.push(`${where}: tags must include at least one of ${MEAL_TAGS.join(', ')}`);
+    }
     if (v.title && v.steps && Number.isInteger(servings) && servings > 0 && Number.isInteger(minutes) && minutes > 0 && !recipeKeys.has(key(v.title))) {
       recipeKeys.add(key(v.title));
-      const tags = (v.tags ?? '').split('|').map(key).filter(Boolean);
-      recipes.push({ title: v.title, steps: v.steps, servings, minutes, tags: [...new Set(tags)] });
+      recipes.push({ title: v.title, steps: v.steps, servings, minutes, tags });
     }
   }
 

@@ -56,6 +56,14 @@ test('a recipe line must use the ingredient pricing unit', () => {
   assert.match(errors.join('\n'), /unit "oz" does not match Chicken's pricing unit "lb"/);
 });
 
+test('a recipe needs a meal tag, and one recipe can carry several', () => {
+  const none = catalog({ recipes: 'title,servings,minutes,tags,steps\nStir fry,4,20,vegetarian,Cook.\n' });
+  assert.match(none.errors.join('\n'), /tags must include at least one of breakfast, lunch, dinner/);
+  const two = catalog({ recipes: 'title,servings,minutes,tags,steps\nStir fry,4,20,Lunch|DINNER,Cook.\n' });
+  assert.deepEqual(two.errors, []);
+  assert.deepEqual(two.catalog.recipes[0].tags, ['lunch', 'dinner']);
+});
+
 test('a recipe with no ingredient lines is an error', () => {
   const { errors } = catalog({ recipeIngredients: 'recipe_title,ingredient_name,quantity,unit\n' });
   assert.match(errors.join('\n'), /recipe "Stir fry" has no valid ingredient lines/);

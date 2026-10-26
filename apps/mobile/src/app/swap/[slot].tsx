@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
-import { MEALS, RECIPES, SWAP_POOL } from '../../data/mock';
+import { MEAL_LABELS, type Meal } from '../../data/mock';
 import { haptic, PressableScale } from '../../motion';
 import { modalEdges } from '../../navigation';
 import { useApp } from '../../state/AppState';
@@ -16,16 +16,48 @@ import { radius, space, useTheme } from '../../theme';
 export default function Swap() {
   const c = useTheme();
   const app = useApp();
-  // Clamp once so the shown dinner and the swapped dinner are always the same day.
-  const raw = Number(useLocalSearchParams<{ day: string }>().day);
-  const dayIndex = Number.isInteger(raw) && raw >= 0 && raw < app.plan.length ? raw : 0;
-  const current = app.plan[dayIndex];
-  // Only offer dinners the household has the equipment to cook.
-  const fits = (id: string) => (RECIPES[id]?.appliances ?? []).every((a) => app.appliances.includes(a));
-  const options = SWAP_POOL.filter((id) => id !== current.id && fits(id)).map((id) => MEALS[id]);
-  const [pick, setPick] = useState(options[0]?.id);
-  const chosen = options.find((o) => o.id === pick);
+  // Clamp once so the shown meal and the swapped meal are always the same slot.
+  const raw = Number(useLocalSearchParams<{ slot: string }>().slot);
+  const slot = Number.isInteger(raw) && raw >= 0 && raw < app.plan.length ? raw : 0;
+  const current = app.plan[slot];
+  const typeLabel = current ? MEAL_LABELS[current.type] : 'Meal';
+
+  // Options come from the household's filters: the example pool, or the meal-options function when live.
+  const [options, setOptions] = useState<Meal[] | null>(null);
+  const [pick, setPick] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    app
+      .getSwapOptions(slot)
+      .then((o) => {
+        if (cancelled) return;
+        setOptions(o);
+        setPick(o[0]?.id);
+      })
+      .catch((e: Error) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
+    // Load once per sheet; later changes to the plan should not reshuffle the choices.
+  }, [slot]);
+
+  if (!current) return null;
+  const chosen = options?.find((o) => o.id === pick);
   const newTotal = app.planTotal - current.cost + (chosen?.cost ?? current.cost);
+
+  const confirm = async () => {
+    if (!chosen) return;
+    setSaving(true);
+    try {
+      await app.swapMeal(slot, chosen);
+      router.back();
+    } catch (e) {
+      setError((e as Error).message);
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={modalEdges} style={[styles.root, { backgroundColor: c.bg }]}>
@@ -33,7 +65,7 @@ export default function Swap() {
         <View style={styles.side}>
           <TextButton label="Cancel" bold={false} onPress={() => router.back()} />
         </View>
-        <AppText variant="headline" accessibilityRole="header">Swap {current.dayLong}’s Dinner</AppText>
+        <AppText variant="headline" accessibilityRole="header">Swap {current.dayLong}’s {typeLabel}</AppText>
         <View style={styles.side} />
       </View>
 
@@ -48,14 +80,24 @@ export default function Swap() {
 
         <View style={styles.group}>
           <AppText variant="eyebrow" accessibilityRole="header">Swap for</AppText>
-          {options.length === 0 ? (
+          {options === null && !error ? (
+            <ActivityIndicator accessibilityLabel="Finding options" color={c.primary} style={styles.loading} />
+          ) : null}
+          {error ? (
+            <View accessibilityRole="alert">
+              <Card style={styles.none}>
+                <AppText color={c.warn}>{error}</AppText>
+              </Card>
+            </View>
+          ) : null}
+          {options?.length === 0 ? (
             <Card style={styles.none}>
-              <AppText color={c.muted}>No other dinners fit the equipment you ticked.</AppText>
+              <AppText color={c.muted}>{`No other ${typeLabel.toLowerCase()} options fit your household and kitchen.`}</AppText>
               <TextButton label="Update Kitchen" onPress={() => router.push('/onboarding/kitchen?edit=1')} />
             </Card>
           ) : null}
           <View accessibilityRole="radiogroup" style={styles.group}>
-            {options.map((o) => {
+            {(options ?? []).map((o) => {
               const on = o.id === pick;
               const diff = o.cost - current.cost;
               return (
@@ -100,14 +142,7 @@ export default function Swap() {
           </AppText>
         </View>
         {chosen ? (
-          <PrimaryButton
-            label="Swap Dinner"
-            feedback="success"
-            onPress={() => {
-              app.swapMeal(dayIndex, chosen.id);
-              router.back();
-            }}
-          />
+          <PrimaryButton label={saving ? 'Swapping…' : `Swap ${typeLabel}`} feedback="success" onPress={saving ? () => {} : confirm} />
         ) : null}
       </View>
     </SafeAreaView>
@@ -122,6 +157,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.gutter, paddingVertical: 12, gap: 16 },
   now: { borderRadius: radius.row, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   group: { gap: 8 },
+  loading: { paddingVertical: 24 },
   none: { padding: 16, gap: 4, alignItems: 'flex-start' },
   option: {
     minHeight: 64,

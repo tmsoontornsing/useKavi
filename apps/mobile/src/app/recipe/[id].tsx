@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { Card, TextButton } from '../../components/Buttons';
-import { applianceName, MEALS, RECIPES, money } from '../../data/mock';
+import { applianceName, MEAL_LABELS, money, type RecipeView } from '../../data/mock';
 import { backOr } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, space, useTheme } from '../../theme';
@@ -16,19 +17,39 @@ const titleCase = (s: string) => s.replace(/(^|[\s-])(\w)/g, (m) => m.toUpperCas
 export default function Recipe() {
   const c = useTheme();
   const app = useApp();
-  const { id, day } = useLocalSearchParams<{ id: string; day?: string }>();
-  const dayIndex = Number(day);
-  // Opened from a day in the plan, follow that day so a swap updates this screen too.
-  const planned = Number.isInteger(dayIndex) ? app.plan[dayIndex] : undefined;
-  const meal = planned ?? (Object.hasOwn(MEALS, id) ? MEALS[id] : undefined);
-  const detail = meal && Object.hasOwn(RECIPES, meal.id) ? RECIPES[meal.id] : undefined;
+  const { id, slot } = useLocalSearchParams<{ id: string; slot?: string }>();
+  const slotIndex = slot !== undefined && Number.isInteger(Number(slot)) ? Number(slot) : undefined;
+  // Opened from a slot in the plan, follow that slot so a swap updates this screen too.
+  const planned = slotIndex !== undefined ? app.plan[slotIndex] : undefined;
+  const recipeId = planned?.id ?? id;
 
+  // undefined while loading, null when the recipe can't be found.
+  const [view, setView] = useState<RecipeView | null | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    setView(undefined);
+    app
+      .getRecipe(recipeId, slotIndex)
+      .then((v) => !cancelled && setView(v))
+      .catch(() => !cancelled && setView(null));
+    return () => {
+      cancelled = true;
+    };
+    // Reload when the meal in this slot changes, or the household size rescales the quantities.
+  }, [recipeId, slotIndex, app.people]);
+
+  const meal = planned ?? view?.meal;
+  const detail = view?.detail ?? undefined;
   const missing = detail ? detail.appliances.filter((a) => !app.appliances.includes(a)) : [];
 
   if (!meal) {
     return (
       <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
-        <AppText style={styles.missing}>This recipe isn’t available.</AppText>
+        {view === undefined ? (
+          <ActivityIndicator accessibilityLabel="Loading recipe" color={c.primary} style={styles.missing} />
+        ) : (
+          <AppText style={styles.missing}>This recipe isn’t available.</AppText>
+        )}
       </SafeAreaView>
     );
   }
@@ -52,21 +73,21 @@ export default function Recipe() {
         {planned ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/swap/[day]', params: { day: String(dayIndex) } })}
+            onPress={() => router.push({ pathname: '/swap/[slot]', params: { slot: String(slotIndex) } })}
             style={({ pressed }) => [styles.swap, { backgroundColor: c.tint, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="swap-horizontal" size={18} color={c.primaryText} />
-            <AppText variant="subhead" weight="600" color={c.primaryText}>Swap Dinner</AppText>
+            <AppText variant="subhead" weight="600" color={c.primaryText}>{`Swap ${MEAL_LABELS[planned.type]}`}</AppText>
           </Pressable>
         ) : null}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.titleBlock}>
-          <AppText variant="eyebrow">{planned ? `${planned.dayLong} dinner` : 'Dinner'}</AppText>
+          <AppText variant="eyebrow">{planned ? `${planned.dayLong} ${MEAL_LABELS[planned.type].toLowerCase()}` : MEAL_LABELS[meal.type]}</AppText>
           <AppText style={styles.title} accessibilityRole="header">{titleCase(meal.name)}</AppText>
           <View style={styles.pills}>
-            {[meal.minutes, `Serves ${detail?.serves ?? 4}`, `${money(total)} est.`].map((p) => (
+            {[meal.minutes, `Serves ${detail?.serves ?? app.people}`, `${money(total)} est.`].map((p) => (
               <View key={p} style={[styles.pill, { backgroundColor: c.card }]}>
                 <AppText variant="subhead" color={c.text} style={{ fontVariant: ['tabular-nums'] }}>{p}</AppText>
               </View>
@@ -76,6 +97,7 @@ export default function Recipe() {
 
         {detail ? (
           <>
+            {detail.appliances.length > 0 ? (
             <View style={styles.section}>
               <AppText variant="eyebrow" accessibilityRole="header">Equipment</AppText>
               <View style={styles.pills}>
@@ -107,6 +129,7 @@ export default function Recipe() {
                 </View>
               ) : null}
             </View>
+            ) : null}
 
             <View style={styles.section}>
               <AppText variant="eyebrow" accessibilityRole="header">Ingredients</AppText>
@@ -142,11 +165,11 @@ export default function Recipe() {
               ))}
             </View>
           </>
+        ) : view === undefined ? (
+          <ActivityIndicator accessibilityLabel="Loading ingredients and steps" color={c.primary} />
         ) : (
           <Card style={styles.pending}>
-            <AppText color={c.muted}>
-              Ingredients and steps for this dinner will load from your recipe library once Kavi is connected.
-            </AppText>
+            <AppText color={c.muted}>Ingredients and steps for this meal aren’t available yet.</AppText>
           </Card>
         )}
       </ScrollView>

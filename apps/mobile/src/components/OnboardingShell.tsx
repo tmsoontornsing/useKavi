@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { space, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { StepHeader } from './StepHeader';
 
-// Step header, scrolling body, and a footer pinned above the home indicator.
+// Step header, scrolling body, and a footer pinned above the home indicator, or above the keyboard while typing.
 export function OnboardingShell({
   step,
   backLabel,
@@ -26,16 +26,18 @@ export function OnboardingShell({
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
       <StepHeader step={step} backLabel={backLabel} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.intro}>
-          <AppText variant="largeTitle" accessibilityRole="header">
-            {title}
-          </AppText>
-          <AppText color={c.muted}>{intro}</AppText>
-        </View>
-        {children}
-      </ScrollView>
-      <View style={[styles.footer, { borderTopColor: c.line }]}>{footer}</View>
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.intro}>
+            <AppText variant="largeTitle" accessibilityRole="header">
+              {title}
+            </AppText>
+            <AppText color={c.muted}>{intro}</AppText>
+          </View>
+          {children}
+        </ScrollView>
+        <View style={[styles.footer, { borderTopColor: c.line }]}>{footer}</View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

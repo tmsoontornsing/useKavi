@@ -7,7 +7,7 @@ import { AppText } from '../../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
 import { TabScreen } from '../../components/TabScreen';
-import { applianceName, RECIPES } from '../../data/mock';
+import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
 import { Reveal } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -24,7 +24,7 @@ export default function Week() {
         <Image source={require('../../../assets/icon.png')} style={styles.icon} accessibilityIgnoresInvertColors />
         <View>
           <AppText variant="largeTitle" accessibilityRole="header">This Week</AppText>
-          <AppText variant="subhead">Oct 27 to Nov 2 · {app.people} people</AppText>
+          <AppText variant="subhead">{app.weekLabel} · {app.people} people</AppText>
         </View>
       </View>
       {ready ? <Reveal><BudgetCard over={over} /></Reveal> : null}
@@ -37,9 +37,9 @@ export default function Week() {
       {app.planStatus === 'empty' ? (
         <Reveal><View style={styles.centered}>
           <Image source={require('../../../assets/shelves/shelf1.png')} style={styles.shelf} resizeMode="contain" />
-          <AppText variant="title" style={styles.center} accessibilityRole="header">No dinners planned yet</AppText>
+          <AppText variant="title" style={styles.center} accessibilityRole="header">No meals planned yet</AppText>
           <AppText color={c.muted} style={styles.center}>
-            Kavi will plan seven dinners for {app.people} people that fit your ${app.budget} budget.
+            Kavi will plan breakfast, lunch, and dinner for {app.people} people that fit your ${app.budget} budget.
           </AppText>
           <PrimaryButton label="Plan This Week" onPress={app.generatePlan} />
           <AppText variant="footnote">Free plan: 1 of 1 plans left this month</AppText>
@@ -52,35 +52,15 @@ export default function Week() {
           </View>
           <AppText variant="title" style={styles.center} accessibilityRole="header">Couldn’t build your plan</AppText>
           <AppText color={c.muted} style={styles.center}>
-            Kavi can’t reach the internet. Check your connection and try again. Your household settings are saved.
+            {app.planError ?? 'Kavi can’t reach the internet. Check your connection and try again.'} Your household settings are saved.
           </AppText>
           <PrimaryButton label="Try Again" onPress={app.generatePlan} />
         </View></Reveal>
       ) : null}
-      {ready
-        ? app.plan.map((meal, i) => (
-            <Reveal key={meal.day} index={i}>
-            <Card style={styles.meal}>
-              <AppText variant="eyebrow" style={styles.day}>{meal.day}</AppText>
-              <Pressable
-                accessibilityRole="link"
-                accessibilityHint="Opens the recipe"
-                onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: meal.id, day: String(i) } })}
-                style={({ pressed }) => [styles.mealText, { opacity: pressed ? 0.6 : 1 }]}
-              >
-                <AppText variant="headline">{meal.name}</AppText>
-                <MealMeta mealId={meal.id} minutes={meal.minutes} />
-              </Pressable>
-              <View style={styles.cost}>
-                <AppText variant="money">${meal.cost}</AppText>
-                <AppText style={styles.est} color={c.muted}>est.</AppText>
-              </View>
-              <IconButton
-                icon="swap-horizontal"
-                label={`Swap ${meal.name}`}
-                onPress={() => router.push({ pathname: '/swap/[day]', params: { day: String(i) } })}
-              />
-            </Card>
+      {ready && app.plan.length === 21
+        ? Array.from({ length: 7 }, (_, d) => app.plan.slice(d * 3, d * 3 + 3)).map((meals, d) => (
+            <Reveal key={meals[0].day} index={d}>
+              <DayCard meals={meals} />
             </Reveal>
           ))
         : null}
@@ -88,15 +68,49 @@ export default function Week() {
   );
 }
 
-// Time, a cue that the recipe is one tap away, and a warning if the dinner needs equipment the household lacks.
-function MealMeta({ mealId, minutes }: { mealId: string; minutes: string }) {
+// One day: its name and cost, then breakfast, lunch, and dinner, each opening its recipe or its swap sheet.
+function DayCard({ meals }: { meals: PlannedMeal[] }) {
+  const c = useTheme();
+  const total = meals.reduce((sum, m) => sum + m.cost, 0);
+  return (
+    <Card style={styles.dayCard}>
+      <View style={styles.dayHead}>
+        <AppText variant="eyebrow" accessibilityRole="header">{meals[0].dayLong}</AppText>
+        <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{`$${total} est.`}</AppText>
+      </View>
+      {meals.map((meal) => (
+        <View key={meal.slot} style={[styles.meal, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }]}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityHint="Opens the recipe"
+            onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: meal.id, slot: String(meal.slot) } })}
+            style={({ pressed }) => [styles.mealText, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <AppText variant="eyebrow" color={c.primaryText}>{MEAL_LABELS[meal.type]}</AppText>
+            <AppText variant="headline">{meal.name}</AppText>
+            <MealMeta meal={meal} />
+          </Pressable>
+          <AppText variant="money" style={styles.cost}>${meal.cost}</AppText>
+          <IconButton
+            icon="swap-horizontal"
+            label={`Swap ${meal.dayLong} ${MEAL_LABELS[meal.type].toLowerCase()}: ${meal.name}`}
+            onPress={() => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } })}
+          />
+        </View>
+      ))}
+    </Card>
+  );
+}
+
+// Time, a cue that the recipe is one tap away, and a warning if the meal needs equipment the household lacks.
+function MealMeta({ meal }: { meal: PlannedMeal }) {
   const c = useTheme();
   const { appliances } = useApp();
-  const needs = (Object.hasOwn(RECIPES, mealId) ? RECIPES[mealId].appliances : []).filter((a) => !appliances.includes(a));
+  const needs = meal.appliances.filter((a) => !(appliances as string[]).includes(a));
   return (
     <>
       <View style={styles.metaRow}>
-        <AppText variant="subhead">{minutes}</AppText>
+        <AppText variant="subhead">{meal.minutes}</AppText>
         <AppText variant="subhead" color={c.muted}>·</AppText>
         <AppText variant="subhead" weight="600" color={c.primaryText}>Recipe</AppText>
         <Ionicons name="chevron-forward" size={13} color={c.primaryText} />
@@ -133,7 +147,7 @@ function BudgetCard({ over }: { over: boolean }) {
         <View style={[styles.warning, { backgroundColor: c.warnBg }]}>
           <Ionicons name="warning-outline" size={18} color={c.warn} />
           <AppText variant="subhead" color={c.warn} weight="500" style={styles.flex}>
-            ${-left} over budget. Swap a dinner to get back under.
+            ${-left} over budget. Swap a meal to get back under.
           </AppText>
         </View>
       ) : (
@@ -189,20 +203,19 @@ const styles = StyleSheet.create({
   budget: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
   budgetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   warning: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', padding: 12, borderRadius: radius.control },
+  dayCard: { borderRadius: radius.row, overflow: 'hidden' },
+  dayHead: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   meal: {
-    borderRadius: radius.row,
     paddingVertical: 10,
     paddingLeft: 14,
     paddingRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
-  day: { width: 36 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   mealText: { flex: 1, flexShrink: 1, minWidth: 0, minHeight: 44, justifyContent: 'center', gap: 2 },
-  cost: { alignItems: 'flex-end' },
-  est: { fontSize: 12 },
+  cost: { minWidth: 30, textAlign: 'right' },
   centered: { alignItems: 'center', gap: 14, paddingTop: 24 },
   center: { textAlign: 'center' },
   shelf: { width: '100%', height: 40 },

@@ -1,3 +1,4 @@
+import { basicPlan } from "./planner.ts";
 import { buildPrompt, parsePlan, type PlanInput, type PlanProvider } from "./provider.ts";
 
 // Production: Claude API. Key is read from an Edge Function secret, never sent to the client.
@@ -14,7 +15,7 @@ export function claudeProvider(apiKey: string, model = "claude-sonnet-5-5"): Pla
         },
         body: JSON.stringify({
           model,
-          max_tokens: 1024,
+          max_tokens: 2048,
           messages: [{ role: "user", content: buildPrompt(input) }],
         }),
       });
@@ -48,12 +49,23 @@ export function ollamaProvider(host = "http://localhost:11434", model = "llama3.
   };
 }
 
-// Picks the provider from env. Defaults to Ollama so local dev never calls paid APIs by accident.
+// Built in: no model and no cost. Used until an AI key is set, and as the fallback when a model fails.
+export function basicProvider(rng?: () => number): PlanProvider {
+  return {
+    name: "basic",
+    generate: (input: PlanInput) => Promise.resolve(basicPlan(input, rng)),
+  };
+}
+
+// Picks the provider from env. Claude when ANTHROPIC_API_KEY is set (or KAVI_PLAN_PROVIDER=claude),
+// Ollama only when asked for by name, and otherwise the built-in planner, so nothing calls a paid API by accident.
 export function providerFromEnv(env: (key: string) => string | undefined): PlanProvider {
-  if (env("KAVI_PLAN_PROVIDER") === "claude") {
+  const choice = env("KAVI_PLAN_PROVIDER") ?? (env("ANTHROPIC_API_KEY") ? "claude" : "basic");
+  if (choice === "claude") {
     const key = env("ANTHROPIC_API_KEY");
     if (!key) throw new Error("ANTHROPIC_API_KEY is not set");
     return claudeProvider(key);
   }
-  return ollamaProvider(env("OLLAMA_HOST"), env("OLLAMA_MODEL"));
+  if (choice === "ollama") return ollamaProvider(env("OLLAMA_HOST"), env("OLLAMA_MODEL"));
+  return basicProvider();
 }

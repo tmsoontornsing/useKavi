@@ -1,4 +1,4 @@
-import type { Plan, PlanInput } from "./provider.ts";
+import { MAX_USES, MEAL_TYPES, type MealType, type Plan, type PlanInput } from "./provider.ts";
 
 // Pure decision logic for plan generation: which recipes may be offered to the model, what they
 // cost for this household, and whether the model's answer is a usable week. No I/O, so it is
@@ -36,7 +36,7 @@ const ALLERGEN_WORDS: Record<string, string[]> = {
   "tree-nuts": ["almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut", "macadamia", "pine nut"],
   "shellfish": ["shrimp", "prawn", "crab", "lobster", "clam", "mussel", "oyster", "scallop", "crawfish"],
   "dairy": ["milk", "cheese", "butter", "cream", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "feta", "whey", "ghee"],
-  "gluten": ["flour", "wheat", "pasta", "spaghetti", "noodle", "bread", "breadcrumb", "panko", "dough", "flour tortilla", "couscous", "bun", "soy sauce", "barley"],
+  "gluten": ["flour", "wheat", "pasta", "spaghetti", "noodle", "bread", "breadcrumb", "panko", "dough", "flour tortilla", "couscous", "bun", "soy sauce", "barley", "oat", "muffin"],
   "eggs": ["egg", "mayonnaise", "mayo"],
   "soy": ["soy", "soya", "tofu", "edamame", "miso", "tempeh"],
 };
@@ -107,43 +107,60 @@ export function shuffle<T>(list: T[], rng: () => number = Math.random): T[] {
   return a;
 }
 
-// Recipes the model may choose from. Allergies, diet and equipment are hard filters. Dislikes are
-// applied only while enough variety remains, so a small catalog never starves the plan.
+// The fewest recipes a meal type needs to fill a week without breaking its repeat limit.
+export const minCandidates = (type: MealType) => Math.ceil(7 / MAX_USES[type]);
+
+// Recipes the model may choose from, for each meal. A recipe is offered for a meal when it carries that
+// meal's tag (`breakfast`, `lunch`, `dinner`), so one recipe can serve more than one meal. Allergies,
+// diet and equipment are hard filters. Dislikes are applied only while enough variety remains, so a
+// small catalog never starves the plan.
 export function selectCandidates(
   recipes: RecipeRecord[],
   profile: PlanProfile,
-  opts: { limit?: number; minAfterDislikes?: number; rng?: () => number } = {},
+  opts: { limit?: number; rng?: () => number } = {},
 ): PlanInput["candidates"] {
-  const { limit = 60, minAfterDislikes = 14, rng = Math.random } = opts;
+  const { limit = 40, rng = Math.random } = opts;
   const safe = recipes.filter(
     (r) =>
       !violatesAllergy(r, profile.allergies) &&
       matchesDiet(r.tags, profile.diet) &&
       hasEquipment(r.tags, profile.appliances),
   );
-  const liked = safe.filter((r) => !profile.dislikes.some((d) => dislikes(r, d)));
-  const pool = liked.length >= minAfterDislikes ? liked : safe;
-  return shuffle(pool, rng)
-    .slice(0, limit)
-    .map((r) => ({
-      id: r.id,
-      title: r.title,
-      minutes: r.minutes,
-      // Scale the recipe from its own servings to this household.
-      estimatedCostUsd: round2((r.baseCostUsd * profile.household_size) / r.servings),
-    }));
+  const forMeal = (type: MealType) => {
+    const ofType = safe.filter((r) => r.tags.includes(type));
+    const liked = ofType.filter((r) => !profile.dislikes.some((d) => dislikes(r, d)));
+    // Keep two weeks' worth of variety before letting dislikes thin the list.
+    const pool = liked.length >= minCandidates(type) * 2 ? liked : ofType;
+    return shuffle(pool, rng)
+      .slice(0, limit)
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        minutes: r.minutes,
+        // Scale the recipe from its own servings to this household.
+        estimatedCostUsd: round2((r.baseCostUsd * profile.household_size) / r.servings),
+      }));
+  };
+  return { breakfast: forMeal("breakfast"), lunch: forMeal("lunch"), dinner: forMeal("dinner") };
 }
 
-// A week needs seven different dinners on seven different days. The provider schema only checks shape.
+// A week is breakfast, lunch and dinner on each of seven days, with no recipe used more often than its
+// meal allows. The provider schema only checks shape.
 export function validateWeek(plan: Plan): string | null {
-  if (plan.items.length !== 7) return `expected 7 dinners, got ${plan.items.length}`;
-  if (new Set(plan.items.map((i) => i.day_of_week)).size !== 7) return "days are not 1 to 7 once each";
-  if (new Set(plan.items.map((i) => i.recipe_id)).size !== 7) return "a recipe is used more than once";
+  if (plan.items.length !== 21) return `expected 21 meals, got ${plan.items.length}`;
+  const slots = new Set(plan.items.map((i) => `${i.day_of_week}|${i.meal_type}`));
+  if (slots.size !== 21) return "a day and meal is missing or used twice";
+  for (const type of MEAL_TYPES) {
+    const uses = new Map<string, number>();
+    for (const i of plan.items) if (i.meal_type === type) uses.set(i.recipe_id, (uses.get(i.recipe_id) ?? 0) + 1);
+    const most = Math.max(...uses.values());
+    if (most > MAX_USES[type]) return `a ${type} recipe is used ${most} times, more than ${MAX_USES[type]}`;
+  }
   return null;
 }
 
 export function planTotal(plan: Plan, candidates: PlanInput["candidates"]): number {
-  const cost = new Map(candidates.map((c) => [c.id, c.estimatedCostUsd]));
+  const cost = new Map(MEAL_TYPES.flatMap((t) => candidates[t]).map((c) => [c.id, c.estimatedCostUsd]));
   return round2(plan.items.reduce((sum, i) => sum + (cost.get(i.recipe_id) ?? 0), 0));
 }
 

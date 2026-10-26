@@ -20,7 +20,7 @@ export default function Kitchen() {
       step={3}
       backLabel={edit ? 'Back to Settings' : 'Back to step 2'}
       title="What’s in Your Kitchen?"
-      intro="Tick what you have. Kavi only plans dinners you can cook with it."
+      intro="Tick what you have. Kavi only plans meals you can cook with it."
       footer={
         <PrimaryButton
           label={edit ? 'Done' : 'Continue'}

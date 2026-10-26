@@ -19,7 +19,7 @@ export default function Diet() {
       step={1}
       backLabel={edit ? 'Back to Settings' : 'Back to welcome'}
       title="How Does Your Household Eat?"
-      intro="Pick the one that fits most dinners. You can change it later in Settings."
+      intro="Pick the one that fits most meals. You can change it later in Settings."
       footer={
         <PrimaryButton
           label={edit ? 'Done' : 'Continue'}
