@@ -40,7 +40,7 @@ export type Profile = {
   appliances: ApplianceId[];
 };
 
-// ---- Sign-in: Apple or Google.
+// ---- Sign-in: Apple, Google, or email and password.
 
 export type OAuthProvider = 'apple' | 'google';
 
@@ -65,6 +65,33 @@ export async function signInWithProvider(provider: OAuthProvider): Promise<boole
   const { error: exchangeError } = await db().auth.exchangeCodeForSession(code);
   if (exchangeError) throw new Error(exchangeError.message);
   return true;
+}
+
+// 'confirm' means the project wants the address verified first, so there is no session until they tap the emailed link.
+export type EmailSignUpResult = 'signed-in' | 'confirm';
+
+const friendlyAuthError = (message: string) => {
+  const m = message.toLowerCase();
+  if (m.includes('invalid login')) return 'That email and password do not match.';
+  if (m.includes('already registered')) return 'There is already an account with that email. Try signing in.';
+  if (m.includes('rate limit')) return 'Too many tries. Wait a minute and try again.';
+  if (m.includes('email not confirmed')) return 'Confirm your email first. Check your inbox for the link.';
+  return message;
+};
+
+export async function signUpWithEmail(email: string, password: string): Promise<EmailSignUpResult> {
+  const { data, error } = await db().auth.signUp({
+    email: email.trim(),
+    password,
+    options: { emailRedirectTo: Linking.createURL('auth-callback') },
+  });
+  if (error) throw new Error(friendlyAuthError(error.message));
+  return data.session ? 'signed-in' : 'confirm';
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<void> {
+  const { error } = await db().auth.signInWithPassword({ email: email.trim(), password });
+  if (error) throw new Error(friendlyAuthError(error.message));
 }
 
 export async function signOut() {

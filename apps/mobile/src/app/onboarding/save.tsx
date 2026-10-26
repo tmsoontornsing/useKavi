@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
-import { Card, PrimaryButton, ProviderButton } from '../../components/Buttons';
+import { Card, PrimaryButton, ProviderButton, TextButton } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
+import { EmailAuthForm } from '../../components/EmailAuthForm';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { applianceName, DIETS } from '../../data/mock';
+import { animateLayout } from '../../motion';
 import { resetTo } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { useTheme } from '../../theme';
@@ -19,7 +21,8 @@ export default function Save() {
   const avoiding = app.allergies.length ? app.allergies.join(', ') : 'Nothing';
   const kitchen = app.appliances.length ? app.appliances.map(applianceName).join(', ') : 'Nothing yet';
 
-  // Sign-in with Apple or Google.
+  // Sign-in with Apple, Google, or email and password.
+  const [emailOpen, setEmailOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +49,23 @@ export default function Save() {
       if (await app.signInWithProvider(provider)) enter();
     });
 
+  const withEmail = async (mode: 'signup' | 'signin', email: string, password: string) => {
+    if (mode === 'signin') {
+      await app.signInWithEmail(email, password);
+      enter();
+      return 'signed-in' as const;
+    }
+    const result = await app.signUpWithEmail(email, password);
+    if (result === 'signed-in') enter();
+    return result;
+  };
+
+  const toggleEmail = (open: boolean) => {
+    animateLayout();
+    setError(null);
+    setEmailOpen(open);
+  };
+
   const summary: [string, string][] = [
     ['Diet', dietName],
     ['People', String(app.people)],
@@ -54,10 +74,13 @@ export default function Save() {
     ['Kitchen', kitchen],
   ];
 
-  const liveFooter = (
+  const liveFooter = emailOpen ? (
+    <EmailAuthForm onSubmit={withEmail} onBack={() => toggleEmail(false)} />
+  ) : (
     <>
       <ProviderButton provider="apple" disabled={busy} onPress={() => withProvider('apple')} />
       <ProviderButton provider="google" disabled={busy} onPress={() => withProvider('google')} />
+      <TextButton label="Use email instead" onPress={() => toggleEmail(true)} />
     </>
   );
 
@@ -68,7 +91,7 @@ export default function Save() {
       title="Save Your Plan"
       intro={
         app.live
-          ? 'Sign in with Apple or Google so your household settings are saved and your grocery list can be shared.'
+          ? 'Sign in with Apple, Google, or your email so your household settings are saved and your grocery list can be shared.'
           : 'This build runs on example data, so nothing is saved yet.'
       }
       footer={

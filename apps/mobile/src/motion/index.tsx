@@ -32,6 +32,7 @@ export const haptic = {
   tap: () => safe(Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
   select: () => safe(Haptics.selectionAsync()),
   success: () => safe(Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
+  error: () => safe(Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),
 };
 
 // Call right before the state change that adds, removes, or resizes rows.

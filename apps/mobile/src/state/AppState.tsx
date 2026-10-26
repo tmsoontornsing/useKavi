@@ -64,6 +64,8 @@ type Actions = {
   setRemindSunday: (on: boolean) => void;
   setNotifyListChanges: (on: boolean) => void;
   signInWithProvider: (provider: api.OAuthProvider) => Promise<boolean>;
+  signUpWithEmail: (email: string, password: string) => Promise<api.EmailSignUpResult>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
   signIn: () => void;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -316,7 +318,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setRemindSunday,
     setNotifyListChanges,
     signInWithProvider: (provider: api.OAuthProvider) => api.signInWithProvider(provider),
-    // Example mode only. Live sign-in goes through Apple or Google.
+    signUpWithEmail: (email: string, password: string) => api.signUpWithEmail(email, password),
+    signInWithEmail: (email: string, password: string) => api.signInWithEmail(email, password),
+    // Example mode only. Live sign-in goes through Apple, Google, or email.
     signIn: () => setDemoSignedIn(true),
     signOut: async () => {
       if (LIVE) {
