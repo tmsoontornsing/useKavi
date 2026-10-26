@@ -15,7 +15,7 @@ export function OnboardingShell({
   children,
   footer,
 }: {
-  step: 1 | 2 | 3;
+  step: 1 | 2 | 3 | 4;
   backLabel: string;
   title: string;
   intro: string;

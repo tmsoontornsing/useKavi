@@ -7,6 +7,7 @@ import { AppText } from '../../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
 import { TabScreen } from '../../components/TabScreen';
+import { applianceName, RECIPES } from '../../data/mock';
 import { Reveal } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -68,7 +69,7 @@ export default function Week() {
                 style={({ pressed }) => [styles.mealText, { opacity: pressed ? 0.6 : 1 }]}
               >
                 <AppText variant="headline">{meal.name}</AppText>
-                <AppText variant="subhead">{meal.minutes}</AppText>
+                <MealMeta mealId={meal.id} minutes={meal.minutes} />
               </Pressable>
               <View style={styles.cost}>
                 <AppText variant="money">${meal.cost}</AppText>
@@ -84,6 +85,28 @@ export default function Week() {
           ))
         : null}
     </TabScreen>
+  );
+}
+
+// Time, a cue that the recipe is one tap away, and a warning if the dinner needs equipment the household lacks.
+function MealMeta({ mealId, minutes }: { mealId: string; minutes: string }) {
+  const c = useTheme();
+  const { appliances } = useApp();
+  const needs = (Object.hasOwn(RECIPES, mealId) ? RECIPES[mealId].appliances : []).filter((a) => !appliances.includes(a));
+  return (
+    <>
+      <View style={styles.metaRow}>
+        <AppText variant="subhead">{minutes}</AppText>
+        <AppText variant="subhead" color={c.muted}>·</AppText>
+        <AppText variant="subhead" weight="600" color={c.primaryText}>Recipe</AppText>
+        <Ionicons name="chevron-forward" size={13} color={c.primaryText} />
+      </View>
+      {needs.length > 0 ? (
+        <AppText variant="footnote" weight="600" color={c.warn}>
+          {`Needs a ${needs.map((n) => applianceName(n).toLowerCase()).join(' and ')}`}
+        </AppText>
+      ) : null}
+    </>
   );
 }
 
@@ -176,6 +199,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   day: { width: 36 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   mealText: { flex: 1, flexShrink: 1, minWidth: 0, minHeight: 44, justifyContent: 'center', gap: 2 },
   cost: { alignItems: 'flex-end' },
   est: { fontSize: 12 },

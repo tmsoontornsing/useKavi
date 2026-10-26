@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../components/AppText';
 import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
-import { MEALS, SWAP_POOL } from '../../data/mock';
+import { MEALS, RECIPES, SWAP_POOL } from '../../data/mock';
 import { haptic, PressableScale } from '../../motion';
 import { modalEdges } from '../../navigation';
 import { useApp } from '../../state/AppState';
@@ -20,10 +20,12 @@ export default function Swap() {
   const raw = Number(useLocalSearchParams<{ day: string }>().day);
   const dayIndex = Number.isInteger(raw) && raw >= 0 && raw < app.plan.length ? raw : 0;
   const current = app.plan[dayIndex];
-  const options = SWAP_POOL.filter((id) => id !== current.id).map((id) => MEALS[id]);
-  const [pick, setPick] = useState(options[0].id);
-  const chosen = MEALS[pick];
-  const newTotal = app.planTotal - current.cost + chosen.cost;
+  // Only offer dinners the household has the equipment to cook.
+  const fits = (id: string) => (RECIPES[id]?.appliances ?? []).every((a) => app.appliances.includes(a));
+  const options = SWAP_POOL.filter((id) => id !== current.id && fits(id)).map((id) => MEALS[id]);
+  const [pick, setPick] = useState(options[0]?.id);
+  const chosen = options.find((o) => o.id === pick);
+  const newTotal = app.planTotal - current.cost + (chosen?.cost ?? current.cost);
 
   return (
     <SafeAreaView edges={modalEdges} style={[styles.root, { backgroundColor: c.bg }]}>
@@ -46,6 +48,12 @@ export default function Swap() {
 
         <View style={styles.group}>
           <AppText variant="eyebrow" accessibilityRole="header">Swap for</AppText>
+          {options.length === 0 ? (
+            <Card style={styles.none}>
+              <AppText color={c.muted}>No other dinners fit the equipment you ticked.</AppText>
+              <TextButton label="Update Kitchen" onPress={() => router.push('/onboarding/kitchen?edit=1')} />
+            </Card>
+          ) : null}
           <View accessibilityRole="radiogroup" style={styles.group}>
             {options.map((o) => {
               const on = o.id === pick;
@@ -91,14 +99,16 @@ export default function Swap() {
             {` of $${app.budget} · est.`}
           </AppText>
         </View>
-        <PrimaryButton
-          label="Swap Dinner"
-          feedback="success"
-          onPress={() => {
-            app.swapMeal(dayIndex, pick);
-            router.back();
-          }}
-        />
+        {chosen ? (
+          <PrimaryButton
+            label="Swap Dinner"
+            feedback="success"
+            onPress={() => {
+              app.swapMeal(dayIndex, chosen.id);
+              router.back();
+            }}
+          />
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -112,6 +122,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.gutter, paddingVertical: 12, gap: 16 },
   now: { borderRadius: radius.row, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   group: { gap: 8 },
+  none: { padding: 16, gap: 4, alignItems: 'flex-start' },
   option: {
     minHeight: 64,
     borderRadius: radius.row,

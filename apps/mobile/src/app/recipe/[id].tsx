@@ -4,8 +4,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
-import { Card } from '../../components/Buttons';
-import { MEALS, RECIPES, money } from '../../data/mock';
+import { Card, TextButton } from '../../components/Buttons';
+import { applianceName, MEALS, RECIPES, money } from '../../data/mock';
 import { backOr } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, space, useTheme } from '../../theme';
@@ -22,6 +22,8 @@ export default function Recipe() {
   const planned = Number.isInteger(dayIndex) ? app.plan[dayIndex] : undefined;
   const meal = planned ?? (Object.hasOwn(MEALS, id) ? MEALS[id] : undefined);
   const detail = meal && Object.hasOwn(RECIPES, meal.id) ? RECIPES[meal.id] : undefined;
+
+  const missing = detail ? detail.appliances.filter((a) => !app.appliances.includes(a)) : [];
 
   if (!meal) {
     return (
@@ -74,6 +76,38 @@ export default function Recipe() {
 
         {detail ? (
           <>
+            <View style={styles.section}>
+              <AppText variant="eyebrow" accessibilityRole="header">Equipment</AppText>
+              <View style={styles.pills}>
+                {detail.appliances.map((id) => {
+                  const have = !missing.includes(id);
+                  return (
+                    <View
+                      key={id}
+                      accessible
+                      accessibilityLabel={`${applianceName(id)}, ${have ? 'in your kitchen' : 'not in your kitchen'}`}
+                      style={[styles.equip, { backgroundColor: have ? c.card : c.warnBg }]}
+                    >
+                      <Ionicons
+                        name={have ? 'checkmark-circle' : 'alert-circle'}
+                        size={16}
+                        color={have ? c.primaryText : c.warn}
+                      />
+                      <AppText variant="subhead" weight="500" color={have ? c.text : c.warn}>{applianceName(id)}</AppText>
+                    </View>
+                  );
+                })}
+              </View>
+              {missing.length > 0 ? (
+                <View style={styles.missingRow}>
+                  <AppText variant="footnote" color={c.warn} style={styles.flex}>
+                    {`Your kitchen doesn’t list a ${missing.map((m) => applianceName(m).toLowerCase()).join(' or a ')}.`}
+                  </AppText>
+                  <TextButton label="Update Kitchen" onPress={() => router.push('/onboarding/kitchen?edit=1')} />
+                </View>
+              ) : null}
+            </View>
+
             <View style={styles.section}>
               <AppText variant="eyebrow" accessibilityRole="header">Ingredients</AppText>
               <Card style={styles.list}>
@@ -132,6 +166,8 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: 32, lineHeight: 36, letterSpacing: -0.6 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
+  equip: { paddingLeft: 10, paddingRight: 12, paddingVertical: 7, borderRadius: radius.pill, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  missingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   section: { gap: 8 },
   list: { paddingHorizontal: 16, paddingVertical: 4 },
   ingredient: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12 },

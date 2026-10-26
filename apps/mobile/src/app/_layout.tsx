@@ -27,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcome" />
         <Stack.Screen name="onboarding/diet" />
         <Stack.Screen name="onboarding/household" />
+        <Stack.Screen name="onboarding/kitchen" />
         <Stack.Screen name="onboarding/save" />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
         <Stack.Screen name="recipe/[id]" />

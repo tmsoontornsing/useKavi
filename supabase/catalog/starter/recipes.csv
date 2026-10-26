@@ -1,132 +1,132 @@
 title,servings,minutes,tags,steps
-Sheet-pan chicken fajitas,4,30,dinner|halal|lowcarb,"Slice the chicken, peppers and onion.
+Sheet-pan chicken fajitas,4,30,dinner|halal|lowcarb|needs-oven,"Slice the chicken, peppers and onion.
 Toss with oil, cumin, chili powder, salt and lime juice.
 Roast at 425F for 20 minutes.
 Serve in warm corn tortillas."
-Black bean and sweet potato tacos,4,25,dinner|vegan|vegetarian|pescatarian|halal|lowcarb,"Cube the sweet potato and roast at 425F for 20 minutes.
+Black bean and sweet potato tacos,4,25,dinner|vegan|vegetarian|pescatarian|halal|lowcarb|needs-oven|needs-stovetop,"Cube the sweet potato and roast at 425F for 20 minutes.
 Warm the black beans with cumin and salt.
 Fill warm tortillas and finish with cilantro and lime."
-Spaghetti with turkey meatballs,4,35,dinner|halal|contains-dairy|contains-gluten|contains-eggs,"Mix the turkey, egg, parmesan and garlic and roll into meatballs.
+Spaghetti with turkey meatballs,4,35,dinner|halal|contains-dairy|contains-gluten|contains-eggs|needs-stovetop,"Mix the turkey, egg, parmesan and garlic and roll into meatballs.
 Brown the meatballs, then simmer in marinara for 15 minutes.
 Serve over cooked spaghetti."
-Veggie fried rice with eggs,4,20,dinner|vegetarian|pescatarian|halal|contains-gluten|contains-eggs|contains-soy|contains-sesame,"Cook the rice ahead and let it cool.
+Veggie fried rice with eggs,4,20,dinner|vegetarian|pescatarian|halal|contains-gluten|contains-eggs|contains-soy|contains-sesame|needs-stovetop,"Cook the rice ahead and let it cool.
 Scramble the eggs and set aside.
 Fry the garlic, green onions and peas and carrots, then add the rice and soy sauce.
 Stir the eggs back in and finish with sesame oil."
-Homemade margherita pizza,4,40,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten,"Stretch the dough on a hot tray.
+Homemade margherita pizza,4,40,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|needs-oven,"Stretch the dough on a hot tray.
 Top with marinara and mozzarella.
 Bake at 475F for 12 minutes and finish with basil."
-Slow-cooker beef chili,6,15,dinner|halal|lowcarb,"Brown the beef with the onion and garlic.
+Slow-cooker beef chili,6,15,dinner|halal|lowcarb|needs-slow-cooker|needs-stovetop,"Brown the beef with the onion and garlic.
 Add tomatoes, beans, chili powder, cumin and salt to the slow cooker.
 Cook on low for 8 hours."
-Lemon garlic salmon with broccoli,4,25,dinner|pescatarian|halal|lowcarb,"Season the salmon with lemon, garlic, oil, salt and pepper.
+Lemon garlic salmon with broccoli,4,25,dinner|pescatarian|halal|lowcarb|needs-oven,"Season the salmon with lemon, garlic, oil, salt and pepper.
 Roast with the broccoli at 425F for 15 minutes."
-Chicken and vegetable stir-fry,4,25,dinner|halal|contains-gluten|contains-soy|contains-sesame,"Cook the rice.
+Chicken and vegetable stir-fry,4,25,dinner|halal|contains-gluten|contains-soy|contains-sesame|needs-stovetop,"Cook the rice.
 Stir-fry the chicken until golden, then set aside.
 Stir-fry the vegetables with garlic and ginger.
 Add the chicken and a sauce of soy sauce and cornstarch; cook until glossy."
-One-pot chicken and rice,4,40,dinner|halal,"Brown the chicken thighs in a large pot, then set aside.
+One-pot chicken and rice,4,40,dinner|halal|needs-stovetop,"Brown the chicken thighs in a large pot, then set aside.
 Soften the onion and garlic, then add the rice, paprika and broth.
 Nestle the chicken back in, cover and simmer for 25 minutes.
 Stir in the peas and carrots for the last 5 minutes."
-Turkey burgers with sweet potato fries,4,35,dinner|halal|contains-gluten,"Cut the sweet potatoes into fries, toss with oil, paprika and salt, and roast at 425F for 25 minutes.
+Turkey burgers with sweet potato fries,4,35,dinner|halal|contains-gluten|needs-oven|needs-stovetop,"Cut the sweet potatoes into fries, toss with oil, paprika and salt, and roast at 425F for 25 minutes.
 Shape the turkey into patties and pan-fry for 5 minutes a side.
 Serve on buns with tomato, ketchup and mustard."
-Beef and broccoli with rice,4,30,dinner|halal|contains-gluten|contains-soy,"Cook the rice.
+Beef and broccoli with rice,4,30,dinner|halal|contains-gluten|contains-soy|needs-stovetop,"Cook the rice.
 Slice the steak thin and sear it hot, then set aside.
 Cook the broccoli, garlic and ginger, then add soy sauce, sugar and cornstarch.
 Return the beef and toss until coated."
-Pork tenderloin with roasted carrots and potatoes,4,45,dinner,"Rub the pork with mustard, garlic, oregano, salt and pepper.
+Pork tenderloin with roasted carrots and potatoes,4,45,dinner|needs-oven,"Rub the pork with mustard, garlic, oregano, salt and pepper.
 Roast the carrots and potatoes with oil at 425F.
 Add the pork to the tray and roast for 25 minutes, then rest before slicing."
-Shrimp tacos with cabbage slaw,4,25,dinner|pescatarian|halal|lowcarb|contains-shellfish|contains-dairy,"Toss the cabbage with lime juice, cilantro and yogurt.
+Shrimp tacos with cabbage slaw,4,25,dinner|pescatarian|halal|lowcarb|contains-shellfish|contains-dairy|needs-stovetop,"Toss the cabbage with lime juice, cilantro and yogurt.
 Season the shrimp with chili powder and cumin and sear for 2 minutes a side.
 Serve in warm tortillas topped with the slaw."
-Baked cod with lemon and green beans,4,25,dinner|pescatarian|halal|lowcarb,"Arrange the cod and green beans on a tray.
+Baked cod with lemon and green beans,4,25,dinner|pescatarian|halal|lowcarb|needs-oven,"Arrange the cod and green beans on a tray.
 Dress with oil, lemon, garlic, salt and pepper.
 Bake at 400F for 15 minutes and finish with parsley."
 Tuna and chickpea salad,4,15,dinner|pescatarian|halal|lowcarb,"Drain the tuna and chickpeas.
 Toss with cucumber, red onion, parsley, lemon juice and oil.
 Season with salt and serve."
-Hearty lentil soup,6,40,dinner|vegan|vegetarian|pescatarian|halal|lowcarb,"Soften the onion, carrots and garlic in oil.
+Hearty lentil soup,6,40,dinner|vegan|vegetarian|pescatarian|halal|lowcarb|needs-stovetop,"Soften the onion, carrots and garlic in oil.
 Add the lentils, tomatoes, broth and cumin; simmer for 30 minutes.
 Stir in the spinach until wilted."
-Chickpea curry with rice,4,35,dinner|vegan|vegetarian|pescatarian|halal,"Cook the rice.
+Chickpea curry with rice,4,35,dinner|vegan|vegetarian|pescatarian|halal|needs-stovetop,"Cook the rice.
 Soften the onion, garlic and ginger, then stir in the curry powder.
 Add the chickpeas, tomatoes and broth; simmer for 20 minutes.
 Stir in the spinach and serve over rice."
-Veggie quesadillas,4,20,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten,"Saute the pepper until soft.
+Veggie quesadillas,4,20,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|needs-stovetop,"Saute the pepper until soft.
 Fill tortillas with cheddar, black beans, the pepper and corn.
 Pan-fry until golden on both sides and serve with salsa."
-Pasta primavera,4,30,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten,"Cook the penne.
+Pasta primavera,4,30,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|needs-stovetop,"Cook the penne.
 Saute the zucchini, pepper, tomato and garlic in oil.
 Toss with the pasta, parmesan and basil."
-Spaghetti aglio e olio,4,20,dinner|vegan|vegetarian|pescatarian|halal|contains-gluten|spicy,"Cook the spaghetti.
+Spaghetti aglio e olio,4,20,dinner|vegan|vegetarian|pescatarian|halal|contains-gluten|spicy|needs-stovetop,"Cook the spaghetti.
 Warm the sliced garlic and red pepper flakes gently in oil.
 Toss with the pasta, parsley and salt."
-Black bean burrito bowls,4,25,dinner|vegan|vegetarian|pescatarian|halal,"Cook the rice.
+Black bean burrito bowls,4,25,dinner|vegan|vegetarian|pescatarian|halal|needs-stovetop,"Cook the rice.
 Warm the black beans and corn with cumin.
 Build bowls with rice, beans, avocado, tomato, salsa, cilantro and lime."
-Roasted vegetable and quinoa bowls,4,40,dinner|vegan|vegetarian|pescatarian|halal,"Roast the sweet potato, broccoli, onion and chickpeas with oil at 425F.
+Roasted vegetable and quinoa bowls,4,40,dinner|vegan|vegetarian|pescatarian|halal|needs-oven|needs-stovetop,"Roast the sweet potato, broccoli, onion and chickpeas with oil at 425F.
 Cook the quinoa.
 Serve over the quinoa with lemon juice, salt and pepper."
-Greek chicken pitas,4,30,dinner|halal|contains-dairy|contains-gluten,"Marinate the chicken in oil, lemon, garlic and oregano, then pan-fry and slice.
+Greek chicken pitas,4,30,dinner|halal|contains-dairy|contains-gluten|needs-stovetop,"Marinate the chicken in oil, lemon, garlic and oregano, then pan-fry and slice.
 Mix the yogurt with a little garlic.
 Fill warm pitas with chicken, cucumber, tomato, red onion, feta and yogurt sauce."
-Spinach and feta frittata,4,30,dinner|vegetarian|pescatarian|halal|lowcarb|contains-dairy|contains-eggs,"Saute the onion, pepper and spinach.
+Spinach and feta frittata,4,30,dinner|vegetarian|pescatarian|halal|lowcarb|contains-dairy|contains-eggs|needs-oven|needs-stovetop,"Saute the onion, pepper and spinach.
 Pour over the beaten eggs and crumble in the feta.
 Bake at 375F for 18 minutes."
-Shakshuka with warm pita,4,30,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|contains-eggs,"Simmer the onion, pepper, garlic and spices in oil, then add the tomatoes.
+Shakshuka with warm pita,4,30,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|contains-eggs|needs-stovetop,"Simmer the onion, pepper, garlic and spices in oil, then add the tomatoes.
 Make wells and crack in the eggs.
 Cover and cook until the whites set; top with feta and serve with pita."
-Classic chicken noodle soup,6,40,dinner|halal|contains-gluten|contains-eggs,"Simmer the chicken in the broth with the vegetables for 20 minutes.
+Classic chicken noodle soup,6,40,dinner|halal|contains-gluten|contains-eggs|needs-stovetop,"Simmer the chicken in the broth with the vegetables for 20 minutes.
 Shred the chicken and return it to the pot.
 Add the noodles and cook until tender; finish with parsley."
-Loaded sweet potatoes with black beans,4,45,dinner|vegetarian|pescatarian|halal|lowcarb|contains-dairy,"Bake the sweet potatoes at 425F for 40 minutes.
+Loaded sweet potatoes with black beans,4,45,dinner|vegetarian|pescatarian|halal|lowcarb|contains-dairy|needs-oven|needs-stovetop,"Bake the sweet potatoes at 425F for 40 minutes.
 Warm the black beans with cumin.
 Split the potatoes and top with beans, cheddar, yogurt, salsa and green onions."
-Beef tacos,4,25,dinner|halal|lowcarb|contains-dairy,"Brown the beef with garlic, chili powder and cumin.
+Beef tacos,4,25,dinner|halal|lowcarb|contains-dairy|needs-stovetop,"Brown the beef with garlic, chili powder and cumin.
 Warm the tortillas.
 Fill with beef and top with cheddar, tomato, shredded cabbage and salsa."
-Spaghetti bolognese,4,40,dinner|halal|contains-dairy|contains-gluten,"Soften the onion, carrot and garlic.
+Spaghetti bolognese,4,40,dinner|halal|contains-dairy|contains-gluten|needs-stovetop,"Soften the onion, carrot and garlic.
 Brown the beef, then add the tomato paste, tomatoes and Italian seasoning.
 Simmer for 25 minutes and serve over spaghetti with parmesan."
-Creamy tomato soup with grilled cheese,4,35,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten,"Simmer the onion, garlic, tomatoes and broth for 20 minutes, then blend with the milk.
+Creamy tomato soup with grilled cheese,4,35,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|needs-blender|needs-stovetop,"Simmer the onion, garlic, tomatoes and broth for 20 minutes, then blend with the milk.
 Butter the bread, fill with cheddar and grill until golden.
 Serve the sandwiches with the soup."
-Honey garlic chicken thighs with green beans,4,40,dinner|halal|lowcarb|contains-gluten|contains-soy,"Whisk the honey, soy sauce and garlic.
+Honey garlic chicken thighs with green beans,4,40,dinner|halal|lowcarb|contains-gluten|contains-soy|needs-oven,"Whisk the honey, soy sauce and garlic.
 Roast the chicken thighs and green beans at 425F, brushing with the sauce, for 30 minutes."
-Baked chicken thighs with potatoes and carrots,4,50,dinner|halal,"Toss the potatoes and carrots with oil and spices on a tray.
+Baked chicken thighs with potatoes and carrots,4,50,dinner|halal|needs-oven,"Toss the potatoes and carrots with oil and spices on a tray.
 Add the chicken thighs, season with paprika, garlic, salt and pepper.
 Roast at 425F for 40 minutes."
-Cauliflower fried rice,4,25,dinner|vegetarian|pescatarian|halal|lowcarb|contains-gluten|contains-eggs|contains-soy|contains-sesame,"Pulse the cauliflower into rice-sized pieces.
+Cauliflower fried rice,4,25,dinner|vegetarian|pescatarian|halal|lowcarb|contains-gluten|contains-eggs|contains-soy|contains-sesame|needs-stovetop,"Pulse the cauliflower into rice-sized pieces.
 Scramble the eggs and set aside.
 Fry the garlic, green onions, peas and carrots, then add the cauliflower and soy sauce.
 Stir the eggs back in and finish with sesame oil."
-Stuffed bell peppers,4,50,dinner|halal|contains-dairy,"Brown the turkey with the onion and garlic, then mix in the rice, tomatoes and Italian seasoning.
+Stuffed bell peppers,4,50,dinner|halal|contains-dairy|needs-oven|needs-stovetop,"Brown the turkey with the onion and garlic, then mix in the rice, tomatoes and Italian seasoning.
 Fill the halved peppers and top with mozzarella.
 Bake at 375F for 35 minutes."
-Eggplant and chickpea stew,4,40,dinner|vegan|vegetarian|pescatarian|halal,"Brown the cubed eggplant in oil.
+Eggplant and chickpea stew,4,40,dinner|vegan|vegetarian|pescatarian|halal|needs-stovetop,"Brown the cubed eggplant in oil.
 Add the onion, garlic and spices, then the tomatoes and chickpeas.
 Simmer for 25 minutes, stir in the spinach and serve over rice."
-Mushroom and spinach pasta,4,25,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten,"Cook the penne.
+Mushroom and spinach pasta,4,25,dinner|vegetarian|pescatarian|halal|contains-dairy|contains-gluten|needs-stovetop,"Cook the penne.
 Brown the mushrooms, then add the garlic and spinach.
 Toss with the pasta, oil, parmesan, salt and pepper."
-Salmon rice bowls,4,30,dinner|pescatarian|halal|contains-gluten|contains-soy|contains-sesame,"Cook the rice.
+Salmon rice bowls,4,30,dinner|pescatarian|halal|contains-gluten|contains-soy|contains-sesame|needs-oven|needs-stovetop,"Cook the rice.
 Roast the salmon glazed with soy sauce and sugar at 425F for 12 minutes.
 Serve over rice with cucumber, avocado and green onions, dressed with rice vinegar and sesame oil."
-Lemon herb chicken with quinoa,4,35,dinner|halal,"Cook the quinoa.
+Lemon herb chicken with quinoa,4,35,dinner|halal|needs-stovetop,"Cook the quinoa.
 Pan-fry the chicken with garlic and lemon juice, then slice.
 Serve over quinoa with wilted spinach and parsley."
-Chicken with almond green beans,4,30,dinner|halal|lowcarb|contains-tree-nuts|contains-dairy,"Pan-fry the chicken in butter until cooked through.
+Chicken with almond green beans,4,30,dinner|halal|lowcarb|contains-tree-nuts|contains-dairy|needs-stovetop,"Pan-fry the chicken in butter until cooked through.
 Saute the green beans with garlic, then toss with toasted almonds and lemon juice."
-Smoky black bean soup,6,40,dinner|vegan|vegetarian|pescatarian|halal|lowcarb,"Soften the onion, pepper and garlic in oil.
+Smoky black bean soup,6,40,dinner|vegan|vegetarian|pescatarian|halal|lowcarb|needs-stovetop,"Soften the onion, pepper and garlic in oil.
 Add the beans, broth and spices; simmer for 25 minutes.
-Blend part of the soup for body and finish with lime and cilantro."
-Crispy tofu and vegetable stir-fry,4,30,dinner|vegan|vegetarian|pescatarian|halal|contains-gluten|contains-soy|contains-sesame,"Cook the rice.
+Mash some of the beans against the side of the pot to thicken it, then finish with lime and cilantro."
+Crispy tofu and vegetable stir-fry,4,30,dinner|vegan|vegetarian|pescatarian|halal|contains-gluten|contains-soy|contains-sesame|needs-stovetop,"Cook the rice.
 Press and cube the tofu, toss in cornstarch and pan-fry until crisp.
 Stir-fry the vegetables with garlic and ginger, then add the soy sauce and tofu."
-Spicy chicken burrito bowls,4,30,dinner|halal|spicy,"Cook the rice.
+Spicy chicken burrito bowls,4,30,dinner|halal|spicy|needs-stovetop,"Cook the rice.
 Season the chicken with chili powder and cumin and pan-fry with the jalapenos; slice.
 Warm the black beans and corn.
 Build bowls and finish with lime and cilantro."

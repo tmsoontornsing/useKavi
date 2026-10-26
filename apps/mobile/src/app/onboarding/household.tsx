@@ -42,7 +42,7 @@ export default function Household() {
           onPress={() => {
             commitBudget();
             if (edit) router.back();
-            else router.push('/onboarding/save');
+            else router.push('/onboarding/kitchen');
           }}
         />
       }

@@ -21,6 +21,8 @@ export type PlanProfile = {
   diet: string | null;
   allergies: string[];
   dislikes: string[];
+  // Equipment ids the household has, e.g. "oven". Empty means not specified, so nothing is filtered.
+  appliances: string[];
 };
 
 const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -90,6 +92,12 @@ export function matchesDiet(tags: string[], diet: string | null): boolean {
   return !accepted || accepted.some((t) => tags.includes(t));
 }
 
+// A recipe tagged `needs-<appliance>` is only offered to households that have that appliance.
+export function hasEquipment(tags: string[], appliances: string[]): boolean {
+  if (appliances.length === 0) return true;
+  return tags.filter((t) => t.startsWith("needs-")).every((t) => appliances.includes(t.slice("needs-".length)));
+}
+
 export function shuffle<T>(list: T[], rng: () => number = Math.random): T[] {
   const a = [...list];
   for (let i = a.length - 1; i > 0; i--) {
@@ -99,15 +107,20 @@ export function shuffle<T>(list: T[], rng: () => number = Math.random): T[] {
   return a;
 }
 
-// Recipes the model may choose from. Allergies and diet are hard filters. Dislikes are applied only
-// while enough variety remains, so a small catalog never starves the plan.
+// Recipes the model may choose from. Allergies, diet and equipment are hard filters. Dislikes are
+// applied only while enough variety remains, so a small catalog never starves the plan.
 export function selectCandidates(
   recipes: RecipeRecord[],
   profile: PlanProfile,
   opts: { limit?: number; minAfterDislikes?: number; rng?: () => number } = {},
 ): PlanInput["candidates"] {
   const { limit = 60, minAfterDislikes = 14, rng = Math.random } = opts;
-  const safe = recipes.filter((r) => !violatesAllergy(r, profile.allergies) && matchesDiet(r.tags, profile.diet));
+  const safe = recipes.filter(
+    (r) =>
+      !violatesAllergy(r, profile.allergies) &&
+      matchesDiet(r.tags, profile.diet) &&
+      hasEquipment(r.tags, profile.appliances),
+  );
   const liked = safe.filter((r) => !profile.dislikes.some((d) => dislikes(r, d)));
   const pool = liked.length >= minAfterDislikes ? liked : safe;
   return shuffle(pool, rng)

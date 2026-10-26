@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
   const { data: profileRow, error: profileError } = await db
     .from("profiles")
-    .select("household_size, weekly_budget_usd, diet, allergies, dislikes")
+    .select("household_size, weekly_budget_usd, diet, allergies, dislikes, appliances")
     .eq("id", userId)
     .maybeSingle();
   if (profileError) return fail("profile_read_failed", profileError.message);
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
   const candidates = selectCandidates(recipes, profile);
   if (candidates.length < 7) {
     return json(
-      { error: "not_enough_recipes", message: "Not enough recipes match your allergies and diet to fill a week", available: candidates.length },
+      { error: "not_enough_recipes", message: "Not enough recipes match your allergies, diet and kitchen to fill a week", available: candidates.length },
       422,
     );
   }

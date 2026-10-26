@@ -23,6 +23,10 @@ node supabase/scripts/import-recipes.ts supabase/catalog/starter             # i
   - `halal` means no pork and no alcohol. It assumes the meat is bought halal. Nothing here checks that.
   - Processed items (broth, salsa, marinara, soy sauce) are assumed free of other allergens. Real
     products vary, so this is a place a human should look.
+- **Equipment tags (`needs-oven`, `needs-stovetop`, ...) were derived from keywords in the steps**
+  (roast or bake means oven, simmer or saute means stovetop, and so on), then checked by eye.
+  Re-check them if you edit steps. Only stovetop, oven, slow cooker and blender are used so far, so
+  ticking air fryer, grill and the rest does not change any plan until recipes need them.
 - Nothing contains peanuts, and only one recipe contains tree nuts, so those two allergies barely filter yet.
 - Vegan has only 9 recipes and `vegan + gluten allergy` has exactly 7, so those users will see repeats.
   More vegan dinners are the first thing worth adding.

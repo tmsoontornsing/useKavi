@@ -48,3 +48,8 @@ quantity x price. Convert to that unit when preparing the data.
   `contains-gluten`, `contains-eggs`, `contains-soy`. These are the reliable signal. The function also
   matches ingredient names as a backup, but that list is a safety net, not a guarantee.
 - **Dislikes**: `spicy` marks spicy recipes.
+- **Equipment**: `needs-<appliance>` for each appliance the recipe requires, using the app's ids:
+  `stovetop`, `oven`, `microwave`, `slow-cooker`, `pressure-cooker`, `air-fryer`, `rice-cooker`, `grill`,
+  `blender`, `food-processor`. A recipe is only offered to households that have every appliance it needs.
+  Untagged recipes need nothing, and a household that has not listed any appliances is not filtered.
+  Tag an appliance only when it is truly required, not for optional shortcuts.

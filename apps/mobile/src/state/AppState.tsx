@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { DAYS, DEFAULT_PLAN, MEALS, PANTRY, type DietId, type PlannedMeal, type Shelf } from '../data/mock';
+import { DAYS, DEFAULT_PLAN, MEALS, PANTRY, type ApplianceId, type DietId, type PlannedMeal, type Shelf } from '../data/mock';
 import { haptic } from '../motion';
 
 // In-memory app state for the frontend build. Supabase replaces this later.
@@ -13,6 +13,7 @@ type AppState = {
   diet: DietId;
   allergies: string[];
   dislikes: string[];
+  appliances: ApplianceId[];
   remindSunday: boolean;
   notifyListChanges: boolean;
   signedIn: boolean;
@@ -30,6 +31,7 @@ type Actions = {
   setDiet: (d: DietId) => void;
   toggleAllergy: (a: string) => void;
   toggleDislike: (d: string) => void;
+  toggleAppliance: (id: ApplianceId) => void;
   setRemindSunday: (on: boolean) => void;
   setNotifyListChanges: (on: boolean) => void;
   signIn: () => void;
@@ -53,6 +55,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [diet, setDiet] = useState<DietId>('any');
   const [allergies, setAllergies] = useState<string[]>(['Peanuts', 'Shellfish']);
   const [dislikes, setDislikes] = useState<string[]>(['Mushrooms']);
+  // Most kitchens have these three, so they start ticked and the user unticks what they lack.
+  const [appliances, setAppliances] = useState<ApplianceId[]>(['stovetop', 'oven', 'microwave']);
   const [remindSunday, setRemindSunday] = useState(true);
   const [notifyListChanges, setNotifyListChanges] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
@@ -76,6 +80,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       diet,
       allergies,
       dislikes,
+      appliances,
       remindSunday,
       notifyListChanges,
       signedIn,
@@ -90,6 +95,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setDiet,
       toggleAllergy: (a: string) => setAllergies((l) => toggle(l, a)),
       toggleDislike: (d: string) => setDislikes((l) => toggle(l, d)),
+      toggleAppliance: (id: ApplianceId) =>
+        setAppliances((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id])),
       setRemindSunday,
       setNotifyListChanges,
       signIn: () => setSignedIn(true),
@@ -118,7 +125,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removePantryItem: (shelf: string, item: string) =>
         setPantry((p) => p.map((s) => (s.name === shelf ? { ...s, items: s.items.filter((x) => x !== item) } : s))),
     };
-  }, [people, budget, diet, allergies, dislikes, remindSunday, notifyListChanges, signedIn, subscribed, planStatus, mealIds, checked, pantry]);
+  }, [people, budget, diet, allergies, dislikes, appliances, remindSunday, notifyListChanges, signedIn, subscribed, planStatus, mealIds, checked, pantry]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -5,7 +5,7 @@ import { AppText } from '../../components/AppText';
 import { Card } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
-import { DIETS } from '../../data/mock';
+import { applianceName, DIETS } from '../../data/mock';
 import { resetTo } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -16,6 +16,7 @@ export default function Save() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const dietName = DIETS.find((d) => d.id === app.diet)?.name ?? 'Everything';
   const avoiding = app.allergies.length ? app.allergies.join(', ') : 'Nothing';
+  const kitchen = app.appliances.length ? app.appliances.map(applianceName).join(', ') : 'Nothing yet';
 
   // Placeholder sign-in: the real build uses AppleAuthenticationButton and Google sign-in through Supabase.
   const finish = () => {
@@ -28,12 +29,13 @@ export default function Save() {
     ['People', String(app.people)],
     ['Weekly budget', `$${app.budget}`],
     ['Avoiding', avoiding],
+    ['Kitchen', kitchen],
   ];
 
   return (
     <OnboardingShell
-      step={3}
-      backLabel={from === 'welcome' ? 'Back to welcome' : 'Back to step 2'}
+      step={4}
+      backLabel={from === 'welcome' ? 'Back to welcome' : 'Back to step 3'}
       title="Save Your Plan"
       intro="Sign in so your household settings are saved and your grocery list can be shared."
       footer={

@@ -4,6 +4,7 @@ import { assert, assertEquals } from "jsr:@std/assert@1";
 import {
   defaultWeekStart,
   hasActiveSubscription,
+  hasEquipment,
   isMonday,
   matchesDiet,
   monthStartUtc,
@@ -32,6 +33,7 @@ const profile = (over: Partial<PlanProfile> = {}): PlanProfile => ({
   diet: "any",
   allergies: [],
   dislikes: [],
+  appliances: [],
   ...over,
 });
 
@@ -107,6 +109,31 @@ Deno.test("dislikes: the spicy tag counts as 'Spicy food'", () => {
   const plain = Array.from({ length: 14 }, (_, i) => recipe({ id: `p${i}` }));
   const out = selectCandidates([spicy, ...plain], profile({ dislikes: ["Spicy food"] }));
   assertEquals(out.some((c) => c.id === "s"), false);
+});
+
+Deno.test("equipment: a recipe needs every appliance it is tagged with", () => {
+  assertEquals(hasEquipment(["needs-oven", "needs-stovetop"], ["oven", "stovetop", "microwave"]), true);
+  assertEquals(hasEquipment(["needs-oven", "needs-stovetop"], ["stovetop"]), false);
+  assertEquals(hasEquipment(["needs-slow-cooker"], ["oven", "stovetop"]), false);
+});
+
+Deno.test("equipment: untagged recipes are always fine, and an empty list filters nothing", () => {
+  assertEquals(hasEquipment([], ["microwave"]), true);
+  assertEquals(hasEquipment(["needs-oven"], []), true);
+});
+
+Deno.test("selectCandidates: drops recipes that need equipment the household lacks", () => {
+  const recipes = [
+    recipe({ id: "roast", tags: ["needs-oven"] }),
+    recipe({ id: "pot", tags: ["needs-stovetop"] }),
+    recipe({ id: "chili", tags: ["needs-stovetop", "needs-slow-cooker"] }),
+  ];
+  const ids = (appliances: string[]) =>
+    selectCandidates(recipes, profile({ appliances }), { rng: () => 0 }).map((c) => c.id).sort();
+  assertEquals(ids(["stovetop"]), ["pot"]);
+  assertEquals(ids(["stovetop", "oven"]), ["pot", "roast"]);
+  assertEquals(ids(["stovetop", "slow-cooker"]), ["chili", "pot"]);
+  assertEquals(ids([]), ["chili", "pot", "roast"]);
 });
 
 Deno.test("selectCandidates: respects the limit", () => {

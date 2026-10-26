@@ -7,7 +7,7 @@ import { AppText } from '../../components/AppText';
 import { Card } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
 import { TabScreen } from '../../components/TabScreen';
-import { DIETS } from '../../data/mock';
+import { applianceName, DIETS } from '../../data/mock';
 import { openUrl, resetTo, share } from '../../navigation';
 import { useApp, type PlanStatus } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -16,6 +16,10 @@ export default function Settings() {
   const c = useTheme();
   const app = useApp();
   const dietName = DIETS.find((d) => d.id === app.diet)?.name ?? 'Everything';
+  // Row value stays on one line: the first two names, then a count of the rest.
+  const kitchen = app.appliances.map(applianceName);
+  const kitchenSummary =
+    kitchen.length === 0 ? 'None' : kitchen.length <= 2 ? kitchen.join(', ') : `${kitchen.slice(0, 2).join(', ')} +${kitchen.length - 2}`;
 
   const confirmDelete = () =>
     Alert.alert(
@@ -60,6 +64,7 @@ export default function Settings() {
         <LinkRow label="Diet" value={dietName} href="/onboarding/diet?edit=1" />
         <LinkRow label="Allergies" value={app.allergies.join(', ') || 'None'} href="/onboarding/household?edit=1" />
         <LinkRow label="Dislikes" value={app.dislikes.join(', ') || 'None'} href="/onboarding/household?edit=1" />
+        <LinkRow label="Kitchen" value={kitchenSummary} href="/onboarding/kitchen?edit=1" />
       </Section>
 
       <Section title="Shared list" footer="People you invite see the grocery list and can check items off.">
