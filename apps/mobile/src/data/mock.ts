@@ -711,8 +711,8 @@ export const ALLERGIES = ['Peanuts', 'Tree nuts', 'Shellfish', 'Dairy', 'Gluten'
 export const DISLIKES = ['Mushrooms', 'Olives', 'Eggplant', 'Spicy food', 'Tofu', 'Fish'];
 
 export const PLANS = [
-  { id: 'annual', name: 'Annual', detail: '$59 per year, about $4.92 per month', badge: 'Save 38%', cta: 'Subscribe for $59 per Year' },
-  { id: 'monthly', name: 'Monthly', detail: '$7.99 per month', badge: '', cta: 'Subscribe for $7.99 per Month' },
+  { id: 'annual', name: 'Annual', price: 59, per: 'year', billed: 'Billed yearly, about $4.92 a month', badge: 'Save 38%', best: true },
+  { id: 'monthly', name: 'Monthly', price: 7.99, per: 'month', billed: 'Billed every month', badge: '', best: false },
 ] as const;
 
 export const money = (n: number) => '$' + n.toFixed(2);

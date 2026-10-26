@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -35,9 +35,15 @@ export default function Save() {
     }
   };
 
+  // New accounts see the paywall once, over their first week; someone returning to an existing account goes straight in.
+  const enter = () => {
+    resetTo('/week');
+    if (from !== 'welcome') router.push('/paywall');
+  };
+
   const withProvider = (provider: 'apple' | 'google') =>
     run(async () => {
-      if (await app.signInWithProvider(provider)) resetTo('/week');
+      if (await app.signInWithProvider(provider)) enter();
     });
 
   const summary: [string, string][] = [
@@ -74,7 +80,7 @@ export default function Save() {
               label="Continue"
               onPress={() => {
                 app.signIn();
-                resetTo('/week');
+                enter();
               }}
             />
           )}

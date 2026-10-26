@@ -1,25 +1,28 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../components/AppText';
 import { IconButton, PrimaryButton, TextButton } from '../components/Buttons';
 import { RadioDot } from '../components/Controls';
-import { PLANS } from '../data/mock';
+import { money, PLANS } from '../data/mock';
+import { haptic, PressableScale, Reveal } from '../motion';
 import { modalEdges, openUrl } from '../navigation';
 import { useApp } from '../state/AppState';
-import { radius, space, useTheme } from '../theme';
+import { fonts, radius, space, useTheme } from '../theme';
 
 const BENEFITS = [
-  'A new plan every week, not just one a month.',
-  'Swap any meal and see the budget update right away.',
-  'Share the grocery list with everyone at home.',
-  'Plans that use what is already on your pantry shelf.',
+  'A new plan every week, not just one a month',
+  'Swap any meal and watch the budget update',
+  'Share the grocery list with everyone at home',
 ];
 
-// Presented as a page sheet. Purchases go through RevenueCat later; this build only marks you subscribed.
+const price = (n: number) => (Number.isInteger(n) ? `$${n}` : money(n));
+
+// Shown after sign-up and from Settings. Presented as a page sheet: close it to stay on the free plan.
+// Purchases go through RevenueCat later; this build only marks you subscribed.
 export default function Paywall() {
   const c = useTheme();
   const app = useApp();
@@ -28,75 +31,105 @@ export default function Paywall() {
 
   return (
     <SafeAreaView edges={modalEdges} style={[styles.root, { backgroundColor: c.bg }]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.top}>
-          <Image source={require('../../assets/icon.png')} style={styles.icon} />
-          <IconButton icon="close" label="Close" onPress={() => router.back()} />
-        </View>
+      <View style={styles.top}>
+        <TextButton
+          label="Restore"
+          bold={false}
+          color={c.muted}
+          onPress={() => Alert.alert('No purchases found', 'There’s nothing to restore on this account.')}
+        />
+        <IconButton icon="close" label="Close, stay on the free plan" onPress={() => router.back()} />
+      </View>
 
-        <View style={styles.intro}>
-          <AppText variant="eyebrow" color={c.primaryText}>Kavi Plus</AppText>
-          <AppText variant="largeTitle" accessibilityRole="header">You’ve used this month’s free plan</AppText>
-          <AppText color={c.muted}>Subscribe to plan every week, or wait until Nov 1 for your next free plan.</AppText>
-        </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Reveal>
+          <View style={styles.intro}>
+            <Image source={require('../../assets/icon.png')} style={styles.icon} accessibilityIgnoresInvertColors />
+            <AppText variant="largeTitle" accessibilityRole="header" style={styles.center}>
+              Plan every week, stay under budget
+            </AppText>
+            <AppText color={c.muted} style={styles.center}>
+              The free plan covers one week a month. Kavi Plus covers all of them.
+            </AppText>
+          </View>
+        </Reveal>
 
-        <View style={styles.benefits}>
-          {BENEFITS.map((b) => (
-            <View key={b} style={styles.benefit}>
-              <View style={[styles.check, { backgroundColor: c.tint }]}>
-                <Ionicons name="checkmark" size={15} color={c.primaryText} />
-              </View>
-              <AppText style={styles.flex}>{b}</AppText>
-            </View>
-          ))}
-        </View>
-
-        <View accessibilityRole="radiogroup" accessibilityLabel="Choose a plan" style={styles.plans}>
-          {PLANS.map((p) => {
-            const on = p.id === plan;
-            return (
-              <Pressable
-                key={p.id}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: on }}
-                onPress={() => setPlan(p.id)}
-                style={({ pressed }) => [
-                  styles.plan,
-                  { backgroundColor: c.card, borderColor: on ? c.primary : c.control, opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <RadioDot on={on} />
-                <View style={styles.flex}>
-                  <AppText variant="headline">{p.name}</AppText>
-                  <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{p.detail}</AppText>
+        <Reveal index={1}>
+          <View accessibilityRole="radiogroup" accessibilityLabel="Choose a plan" style={styles.plans}>
+            {PLANS.map((p) => {
+              const on = p.id === plan;
+              return (
+                <View key={p.id} style={styles.planWrap}>
+                  <PressableScale
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: on }}
+                    accessibilityLabel={`${p.name}, ${price(p.price)} per ${p.per}`}
+                    to={0.98}
+                    onPress={() => {
+                      if (!on) haptic.select();
+                      setPlan(p.id);
+                    }}
+                    style={({ pressed }) => [
+                      styles.plan,
+                      { backgroundColor: c.card, borderColor: on ? c.primary : c.control, opacity: pressed ? 0.85 : 1 },
+                    ]}
+                  >
+                    <RadioDot on={on} />
+                    <View style={styles.flex}>
+                      <View style={styles.nameRow}>
+                        <AppText variant="headline">{p.name}</AppText>
+                        {p.badge ? (
+                          <View style={[styles.chip, { backgroundColor: c.badge }]}>
+                            <AppText variant="footnote" weight="700" color={c.badgeText}>{p.badge}</AppText>
+                          </View>
+                        ) : null}
+                      </View>
+                      <AppText variant="footnote">{p.billed}</AppText>
+                    </View>
+                    <View style={styles.priceCol}>
+                      <AppText style={[styles.price, { fontFamily: fonts.displaySemi }]}>{price(p.price)}</AppText>
+                      <AppText variant="footnote">{`per ${p.per}`}</AppText>
+                    </View>
+                  </PressableScale>
+                  {p.best ? (
+                    <View pointerEvents="none" style={[styles.best, { backgroundColor: c.primary }]}>
+                      <AppText variant="footnote" weight="700" color={c.onPrimary} style={styles.bestText}>BEST VALUE</AppText>
+                    </View>
+                  ) : null}
                 </View>
-                {p.badge ? (
-                  <View style={[styles.badge, { backgroundColor: c.badge }]}>
-                    <AppText variant="footnote" weight="600" color={c.badgeText}>{p.badge}</AppText>
-                  </View>
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        </Reveal>
+
+        <Reveal index={2}>
+          <View style={styles.benefits}>
+            {BENEFITS.map((b) => (
+              <View key={b} style={styles.benefit}>
+                <View style={[styles.check, { backgroundColor: c.tint }]}>
+                  <Ionicons name="checkmark" size={14} color={c.primaryText} />
+                </View>
+                <AppText style={styles.flex}>{b}</AppText>
+              </View>
+            ))}
+          </View>
+        </Reveal>
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: c.line }]}>
         <PrimaryButton
-          label={chosen.cta}
+          label="Continue"
+          feedback="success"
           onPress={() => {
             app.subscribe();
             router.back();
           }}
         />
         <AppText variant="footnote" style={styles.center}>
-          Renews automatically until canceled. Cancel anytime in your App Store or Google Play settings.
+          {`Auto-renews at ${price(chosen.price)}/${chosen.per}. Cancel anytime.`}
         </AppText>
         <View style={styles.links}>
-          <TextButton
-            label="Restore Purchases"
-            onPress={() => Alert.alert('No purchases found', 'There’s nothing to restore on this account.')}
-          />
+          <TextButton label="Not Now" bold={false} color={c.muted} onPress={() => router.back()} />
           <TextButton label="Terms and Privacy" bold={false} color={c.muted} onPress={() => openUrl('https://usekavi.com')} />
         </View>
       </View>
@@ -107,26 +140,32 @@ export default function Paywall() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1, gap: 2 },
-  content: { paddingHorizontal: space.gutter, paddingTop: 16, paddingBottom: 12, gap: 18 },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  icon: { width: 56, height: 56, borderRadius: 14 },
-  intro: { gap: 6 },
-  benefits: { gap: 12 },
-  benefit: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  check: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  plans: { gap: 10 },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8 },
+  content: { paddingHorizontal: space.gutter, paddingTop: 4, paddingBottom: 16, gap: 24 },
+  intro: { alignItems: 'center', gap: 10 },
+  icon: { width: 72, height: 72, borderRadius: 18, marginBottom: 4 },
+  center: { textAlign: 'center' },
+  plans: { gap: 18, paddingTop: 8 },
+  planWrap: { position: 'relative' },
   plan: {
-    minHeight: 64,
+    minHeight: 76,
     borderRadius: radius.card,
     borderWidth: 2,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
-  footer: { paddingHorizontal: space.gutter, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'stretch' },
-  center: { textAlign: 'center' },
-  links: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  chip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
+  priceCol: { alignItems: 'flex-end' },
+  price: { fontSize: 22, fontVariant: ['tabular-nums'] },
+  best: { position: 'absolute', top: -11, alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 3, borderRadius: radius.pill },
+  bestText: { letterSpacing: 0.6 },
+  benefits: { gap: 12 },
+  benefit: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  check: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  links: { flexDirection: 'row', justifyContent: 'center', gap: 16 },
+  footer: { paddingHorizontal: space.gutter, paddingTop: 12, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'stretch' },
 });
