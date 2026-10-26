@@ -17,6 +17,8 @@ export const supabase = isSupabaseConfigured
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        // Apple and Google sign-in return to the app with a one-time code that this client exchanges for a session.
+        flowType: 'pkce',
       },
     })
   : null;

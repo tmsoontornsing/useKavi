@@ -1,17 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
-import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
+import { Card, PrimaryButton, ProviderButton } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { applianceName, DIETS } from '../../data/mock';
 import { resetTo } from '../../navigation';
 import { useApp } from '../../state/AppState';
-import { radius, useTheme } from '../../theme';
-
-const looksLikeEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s.trim());
+import { useTheme } from '../../theme';
 
 export default function Save() {
   const c = useTheme();
@@ -21,10 +19,7 @@ export default function Save() {
   const avoiding = app.allergies.length ? app.allergies.join(', ') : 'Nothing';
   const kitchen = app.appliances.length ? app.appliances.map(applianceName).join(', ') : 'Nothing yet';
 
-  // Sign-in by emailed code: enter an email, then the 6-digit code from the message.
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
+  // Sign-in with Apple or Google.
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,28 +35,10 @@ export default function Save() {
     }
   };
 
-  const sendCode = () => {
-    if (!looksLikeEmail(email)) {
-      setError('Enter an email address like name@example.com.');
-      return;
-    }
+  const withProvider = (provider: 'apple' | 'google') =>
     run(async () => {
-      await app.sendSignInCode(email);
-      setCode('');
-      setCodeSent(true);
+      if (await app.signInWithProvider(provider)) resetTo('/week');
     });
-  };
-
-  const verify = () => {
-    if (code.trim().length < 6) {
-      setError('Enter the 6-digit code from the email.');
-      return;
-    }
-    run(async () => {
-      await app.verifySignInCode(email, code);
-      resetTo('/week');
-    });
-  };
 
   const summary: [string, string][] = [
     ['Diet', dietName],
@@ -71,49 +48,10 @@ export default function Save() {
     ['Kitchen', kitchen],
   ];
 
-  const input = [styles.input, { backgroundColor: c.card, color: c.text, borderColor: c.control }];
-
-  const liveFooter = codeSent ? (
+  const liveFooter = (
     <>
-      <AppText variant="subhead">{`Enter the 6-digit code we sent to ${email.trim()}.`}</AppText>
-      <TextInput
-        accessibilityLabel="Sign-in code"
-        value={code}
-        onChangeText={(t) => setCode(t.replace(/[^0-9]/g, ''))}
-        onSubmitEditing={verify}
-        keyboardType="number-pad"
-        textContentType="oneTimeCode"
-        autoComplete="one-time-code"
-        maxLength={6}
-        autoFocus
-        placeholder="123456"
-        placeholderTextColor={c.muted}
-        style={[input, styles.code]}
-      />
-      <PrimaryButton label={busy ? 'Signing In…' : 'Sign In'} onPress={busy ? () => {} : verify} />
-      <View style={styles.row}>
-        <TextButton label="Use a Different Email" bold={false} onPress={() => setCodeSent(false)} />
-        <TextButton label="Send a New Code" bold={false} onPress={sendCode} />
-      </View>
-    </>
-  ) : (
-    <>
-      <TextInput
-        accessibilityLabel="Email address"
-        value={email}
-        onChangeText={setEmail}
-        onSubmitEditing={sendCode}
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        autoComplete="email"
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="send"
-        placeholder="you@example.com"
-        placeholderTextColor={c.muted}
-        style={input}
-      />
-      <PrimaryButton label={busy ? 'Sending…' : 'Email Me a Code'} onPress={busy ? () => {} : sendCode} />
+      <ProviderButton provider="apple" disabled={busy} onPress={() => withProvider('apple')} />
+      <ProviderButton provider="google" disabled={busy} onPress={() => withProvider('google')} />
     </>
   );
 
@@ -124,7 +62,7 @@ export default function Save() {
       title="Save Your Plan"
       intro={
         app.live
-          ? 'Sign in with your email so your household settings are saved and your grocery list can be shared.'
+          ? 'Sign in with Apple or Google so your household settings are saved and your grocery list can be shared.'
           : 'This build runs on example data, so nothing is saved yet.'
       }
       footer={
@@ -182,8 +120,5 @@ const styles = StyleSheet.create({
   summaryRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   value: { flexShrink: 1, textAlign: 'right' },
   remind: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  input: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 14, fontSize: 17 },
-  code: { fontSize: 24, letterSpacing: 6, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
   center: { textAlign: 'center', paddingBottom: 4 },
 });

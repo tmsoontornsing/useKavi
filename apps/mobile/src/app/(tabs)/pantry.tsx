@@ -70,9 +70,16 @@ export default function Pantry() {
                 <PressableScale
                   accessibilityRole={editing ? 'button' : 'text'}
                   accessibilityLabel={editing ? `Remove ${item}` : item}
-                  disabled={!editing}
+                  accessibilityHint={editing ? undefined : 'Press and hold to edit the shelf'}
                   to={0.92}
+                  // Press and hold starts editing, like rearranging icons on the iOS home screen.
+                  onLongPress={() => {
+                    if (editing) return;
+                    haptic.success();
+                    setEditing(true);
+                  }}
                   onPress={() => {
+                    if (!editing) return;
                     haptic.tap();
                     animateLayout();
                     removePantryItem(shelf.name, item);

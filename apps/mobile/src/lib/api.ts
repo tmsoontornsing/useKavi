@@ -13,6 +13,9 @@ import {
   type RecipeView,
   type Shelf,
 } from '../data/mock';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+
 import { supabase } from './supabase';
 
 // Every read and write the app makes to Supabase. All of it runs as the signed-in user, so row-level
@@ -37,16 +40,31 @@ export type Profile = {
   appliances: ApplianceId[];
 };
 
-// ---- Sign-in: a 6-digit code sent by email, so it works without links back into the app.
+// ---- Sign-in: Apple or Google.
 
-export async function sendSignInCode(email: string) {
-  const { error } = await db().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  if (error) throw new Error(error.message);
-}
+export type OAuthProvider = 'apple' | 'google';
 
-export async function verifySignInCode(email: string, code: string) {
-  const { error } = await db().auth.verifyOtp({ email, token: code, type: 'email' });
-  if (error) throw new Error(error.message);
+// Apple and Google sign in through the provider's own page in a system browser sheet, then return to
+// kavi://auth-callback with a one-time code. Returns false when the person closes the sheet.
+export async function signInWithProvider(provider: OAuthProvider): Promise<boolean> {
+  const redirectTo = Linking.createURL('auth-callback');
+  const { data, error } = await db().auth.signInWithOAuth({
+    provider,
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+  if (error || !data.url) throw new Error(error?.message ?? 'Could not start sign-in.');
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (result.type !== 'success') return false;
+
+  const params = new URL(result.url).searchParams;
+  const failure = params.get('error_description') ?? params.get('error');
+  if (failure) throw new Error(failure);
+  const code = params.get('code');
+  if (!code) throw new Error('Sign-in did not finish. Try again.');
+  const { error: exchangeError } = await db().auth.exchangeCodeForSession(code);
+  if (exchangeError) throw new Error(exchangeError.message);
+  return true;
 }
 
 export async function signOut() {

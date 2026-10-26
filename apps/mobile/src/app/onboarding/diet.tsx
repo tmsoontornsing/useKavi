@@ -5,6 +5,7 @@ import { AppText } from '../../components/AppText';
 import { Card, PrimaryButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
+import { goToStep } from '../../components/StepHeader';
 import { DIETS } from '../../data/mock';
 import { useApp } from '../../state/AppState';
 import { useTheme } from '../../theme';
@@ -23,7 +24,7 @@ export default function Diet() {
       footer={
         <PrimaryButton
           label={edit ? 'Done' : 'Continue'}
-          onPress={() => (edit ? router.back() : router.push('/onboarding/household'))}
+          onPress={() => (edit ? router.back() : goToStep(1, 2))}
         />
       }
     >

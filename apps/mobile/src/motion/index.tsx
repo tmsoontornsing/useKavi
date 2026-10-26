@@ -107,7 +107,18 @@ export function useTabSlide(tab: TabName) {
 }
 
 // Fades and lifts its content in on mount. Pass the row index to stagger a list.
-export function Reveal({ index = 0, children, style }: { index?: number; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Reveal({
+  index = 0,
+  lift = 14,
+  children,
+  style,
+}: {
+  index?: number;
+  // Pixels it rises while fading in; 0 for a plain fade.
+  lift?: number;
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
   const v = useRef(new Animated.Value(reduced ? 1 : 0)).current;
 
   useEffect(() => {
@@ -126,7 +137,7 @@ export function Reveal({ index = 0, children, style }: { index?: number; childre
 
   return (
     <Animated.View
-      style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }]}
+      style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [lift, 0] }) }] }]}
     >
       {children}
     </Animated.View>
@@ -157,4 +168,35 @@ export function Wiggle({ active, seed = 0, children }: { active: boolean; seed?:
       {children}
     </Animated.View>
   );
+}
+
+// Counts a number up or down to its new value instead of jumping, picking up from wherever it is if the value changes mid-count.
+export function useCountUp(value: number, duration = 520) {
+  const [shown, setShown] = useState(value);
+  const current = useRef(value);
+
+  useEffect(() => {
+    if (reduced || current.current === value) {
+      current.current = value;
+      setShown(value);
+      return;
+    }
+    const v = new Animated.Value(current.current);
+    const id = v.addListener(({ value: n }) => {
+      current.current = n;
+      setShown(n);
+    });
+    Animated.timing(v, { toValue: value, duration, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(({ finished }) => {
+      if (finished) {
+        current.current = value;
+        setShown(value);
+      }
+    });
+    return () => {
+      v.removeListener(id);
+      v.stopAnimation();
+    };
+  }, [value, duration]);
+
+  return shown;
 }

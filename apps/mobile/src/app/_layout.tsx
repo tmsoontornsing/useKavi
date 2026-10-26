@@ -25,10 +25,10 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="welcome" />
-        <Stack.Screen name="onboarding/diet" />
-        <Stack.Screen name="onboarding/household" />
-        <Stack.Screen name="onboarding/kitchen" />
-        <Stack.Screen name="onboarding/save" />
+        <Stack.Screen name="onboarding/diet" options={{ animation: 'none' }} />
+        <Stack.Screen name="onboarding/household" options={{ animation: 'none' }} />
+        <Stack.Screen name="onboarding/kitchen" options={{ animation: 'none' }} />
+        <Stack.Screen name="onboarding/save" options={{ animation: 'none' }} />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
         <Stack.Screen name="recipe/[id]" />
         <Stack.Screen name="swap/[slot]" options={{ presentation: 'modal' }} />

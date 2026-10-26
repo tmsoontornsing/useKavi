@@ -9,13 +9,19 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.usekavi.app"
+      "bundleIdentifier": "com.logicbaker.kavi",
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/ios-dark.png",
+        "tinted": "./assets/ios-tinted.png"
+      }
     },
     "android": {
       "package": "com.usekavi.app",
       "adaptiveIcon": {
         "backgroundColor": "#3DAA84",
-        "foregroundImage": "./assets/adaptive-icon.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -32,7 +38,31 @@
           "backgroundColor": "#3DAA84"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.logicbaker.kavi.widgets",
+          "groupIdentifier": "group.com.logicbaker.kavi",
+          "enableAndroid": false,
+          "widgets": [
+            {
+              "name": "KaviToday",
+              "displayName": "Today’s Meals",
+              "description": "Breakfast, lunch, dinner, and your grocery progress.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ],
+                "initialLayout": "widgets/KaviToday.tsx"
+              },
+              "android": null
+            }
+          ]
+        }
+      ]
     ]
   }
 }

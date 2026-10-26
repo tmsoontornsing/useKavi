@@ -6,9 +6,10 @@ import { AccessibilityInfo, Animated, Image, Pressable, StyleSheet, View } from 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
+import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
-import { Reveal } from '../../motion';
+import { Reveal, useCountUp } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
 
@@ -79,7 +80,25 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
         <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{`$${total} est.`}</AppText>
       </View>
       {meals.map((meal) => (
-        <View key={meal.slot} style={[styles.meal, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }]}>
+        <SwipeRow
+          key={meal.slot}
+          background={c.card}
+          start={{
+            label: 'Recipe',
+            icon: 'book-outline',
+            background: c.tint,
+            foreground: c.primaryText,
+            onTrigger: () => router.push({ pathname: '/recipe/[id]', params: { id: meal.id, slot: String(meal.slot) } }),
+          }}
+          end={{
+            label: 'Swap',
+            icon: 'swap-horizontal',
+            background: c.primary,
+            foreground: c.onPrimary,
+            onTrigger: () => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } }),
+          }}
+        >
+        <View style={[styles.meal, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }]}>
           <Pressable
             accessibilityRole="link"
             accessibilityHint="Opens the recipe"
@@ -97,6 +116,7 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
             onPress={() => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } })}
           />
         </View>
+        </SwipeRow>
       ))}
     </Card>
   );
@@ -128,12 +148,13 @@ function BudgetCard({ over }: { over: boolean }) {
   const c = useTheme();
   const { planTotal, budget } = useApp();
   const left = budget - planTotal;
+  const shownTotal = Math.round(useCountUp(planTotal));
   return (
     <Card style={styles.budget}>
       <View style={styles.budgetHead}>
         <AppText variant="eyebrow">Budget</AppText>
         <AppText style={{ fontVariant: ['tabular-nums'] }}>
-          <AppText variant="money" style={{ fontSize: 24 }} color={over ? c.warn : c.text}>${planTotal}</AppText>
+          <AppText variant="money" style={{ fontSize: 24 }} color={over ? c.warn : c.text}>${shownTotal}</AppText>
           {` of $${budget} · est.`}
         </AppText>
       </View>

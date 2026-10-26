@@ -19,6 +19,7 @@ import {
 } from '../data/mock';
 import * as api from '../lib/api';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { syncWidgets } from '../lib/widgets';
 import { haptic } from '../motion';
 
 // App state. With Supabase configured (EXPO_PUBLIC_SUPABASE_* in .env), a signed-in household's profile,
@@ -62,8 +63,7 @@ type Actions = {
   toggleAppliance: (id: ApplianceId) => void;
   setRemindSunday: (on: boolean) => void;
   setNotifyListChanges: (on: boolean) => void;
-  sendSignInCode: (email: string) => Promise<void>;
-  verifySignInCode: (email: string, code: string) => Promise<void>;
+  signInWithProvider: (provider: api.OAuthProvider) => Promise<boolean>;
   signIn: () => void;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -274,6 +274,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setPlanError(null);
   };
 
+  // Keep the home screen widget in step with the plan and the grocery checklist.
+  useEffect(() => {
+    syncWidgets(plan, groceries, checked);
+  }, [plan, groceries, checked]);
+
   const signedIn = LIVE ? session !== null : demoSignedIn;
   const planTotal = plan.reduce((s, m) => s + m.cost, 0);
 
@@ -310,9 +315,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setAppliances((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id])),
     setRemindSunday,
     setNotifyListChanges,
-    sendSignInCode: (email: string) => api.sendSignInCode(email.trim()),
-    verifySignInCode: (email: string, code: string) => api.verifySignInCode(email.trim(), code.trim()),
-    // Example mode only. Live sign-in happens through the emailed code.
+    signInWithProvider: (provider: api.OAuthProvider) => api.signInWithProvider(provider),
+    // Example mode only. Live sign-in goes through Apple or Google.
     signIn: () => setDemoSignedIn(true),
     signOut: async () => {
       if (LIVE) {

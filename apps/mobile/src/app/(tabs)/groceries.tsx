@@ -5,9 +5,10 @@ import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
 import { AppText } from '../../components/AppText';
 import { Card, IconButton } from '../../components/Buttons';
 import { CheckCircle, ProgressBar } from '../../components/Controls';
+import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
-import { animateLayout, haptic, PressableScale, reduceMotion } from '../../motion';
+import { animateLayout, haptic, PressableScale, reduceMotion, useCountUp } from '../../motion';
 import { share as shareText } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -39,7 +40,7 @@ export default function Groceries() {
 
   const all = groceries.flatMap((a) => a.items);
   const done = all.filter((i) => checked[i.key]).length;
-  const total = groceryTotal;
+  const total = useCountUp(groceryTotal);
   // A short, readable summary of the shelf: the first few items, then "and more".
   const shelf = pantry.flatMap((s) => s.items).map((i) => i.toLowerCase());
   const shelfText = shelf.length <= 3 ? shelf.join(', ') : `${shelf.slice(0, 3).join(', ')}, and more`;
@@ -116,8 +117,18 @@ export default function Groceries() {
               ? aisle.items.map((item) => {
                   const on = !!checked[item.key];
                   return (
-                    <PressableScale
+                    <SwipeRow
                       key={item.key}
+                      background={c.card}
+                      start={{
+                        label: on ? 'Undo' : 'In cart',
+                        icon: on ? 'arrow-undo' : 'cart',
+                        background: on ? c.control : c.primary,
+                        foreground: on ? c.text : c.onPrimary,
+                        onTrigger: () => toggleChecked(item.key),
+                      }}
+                    >
+                    <PressableScale
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: on }}
                       to={0.98}
@@ -139,6 +150,7 @@ export default function Groceries() {
                       </AppText>
                       <AppText variant="subhead" style={styles.nums}>{money(item.price)}</AppText>
                     </PressableScale>
+                    </SwipeRow>
                   );
                 })
               : null}

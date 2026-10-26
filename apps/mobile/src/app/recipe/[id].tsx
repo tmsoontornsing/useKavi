@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../components/AppText';
 import { Card, TextButton } from '../../components/Buttons';
 import { applianceName, MEAL_LABELS, money, type RecipeView } from '../../data/mock';
+import { animateLayout, haptic, PressableScale } from '../../motion';
 import { backOr } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, space, useTheme } from '../../theme';
@@ -25,6 +26,9 @@ export default function Recipe() {
 
   // undefined while loading, null when the recipe can't be found.
   const [view, setView] = useState<RecipeView | null | undefined>(undefined);
+  // Steps ticked off while cooking; a swapped-in recipe starts clean.
+  const [doneSteps, setDoneSteps] = useState<Record<number, boolean>>({});
+  useEffect(() => setDoneSteps({}), [recipeId]);
   useEffect(() => {
     let cancelled = false;
     setView(undefined);
@@ -155,14 +159,33 @@ export default function Recipe() {
 
             <View style={styles.section}>
               <AppText variant="eyebrow" accessibilityRole="header">Steps</AppText>
-              {detail.steps.map((step, i) => (
-                <View key={step} style={styles.step}>
-                  <View style={[styles.stepNum, { backgroundColor: c.tint }]}>
-                    <AppText variant="subhead" weight="700" color={c.primaryText}>{i + 1}</AppText>
-                  </View>
-                  <AppText style={styles.flex}>{step}</AppText>
-                </View>
-              ))}
+              {detail.steps.map((step, i) => {
+                const done = !!doneSteps[i];
+                return (
+                  <PressableScale
+                    key={step}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: done }}
+                    accessibilityHint="Marks this step as done"
+                    to={0.98}
+                    onPress={() => {
+                      haptic.tap();
+                      animateLayout();
+                      setDoneSteps((d) => ({ ...d, [i]: !d[i] }));
+                    }}
+                    style={styles.step}
+                  >
+                    <View style={[styles.stepNum, { backgroundColor: done ? c.primary : c.tint }]}>
+                      {done ? (
+                        <Ionicons name="checkmark" size={16} color={c.onPrimary} />
+                      ) : (
+                        <AppText variant="subhead" weight="700" color={c.primaryText}>{i + 1}</AppText>
+                      )}
+                    </View>
+                    <AppText style={[styles.flex, done && styles.stepDone]} color={done ? c.muted : c.text}>{step}</AppText>
+                  </PressableScale>
+                );
+              })}
             </View>
           </>
         ) : view === undefined ? (
@@ -197,5 +220,6 @@ const styles = StyleSheet.create({
   tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
   step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   stepNum: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  stepDone: { textDecorationLine: 'line-through' },
   pending: { padding: 16 },
 });

@@ -1,12 +1,13 @@
 import Slider from '@react-native-community/slider';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { Chip } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
+import { goToStep } from '../../components/StepHeader';
 import { ALLERGIES, DISLIKES } from '../../data/mock';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, useTheme } from '../../theme';
@@ -29,6 +30,17 @@ export default function Household() {
     app.setBudget(n);
     setDraft(String(n));
   };
+  // Leaving through a tab or Back unmounts this screen with the keyboard possibly still open, so keep what was typed.
+  const latest = useRef({ draft, budget: app.budget, setBudget: app.setBudget });
+  latest.current = { draft, budget: app.budget, setBudget: app.setBudget };
+  useEffect(
+    () => () => {
+      const { draft: d, budget, setBudget } = latest.current;
+      const n = Math.min(400, Math.max(50, Number(d) || budget));
+      if (n !== budget) setBudget(n);
+    },
+    [],
+  );
 
   return (
     <OnboardingShell
@@ -42,7 +54,7 @@ export default function Household() {
           onPress={() => {
             commitBudget();
             if (edit) router.back();
-            else router.push('/onboarding/kitchen');
+            else goToStep(2, 3);
           }}
         />
       }

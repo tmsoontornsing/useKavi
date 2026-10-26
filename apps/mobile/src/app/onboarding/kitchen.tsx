@@ -5,6 +5,7 @@ import { AppText } from '../../components/AppText';
 import { Card, PrimaryButton } from '../../components/Buttons';
 import { CheckCircle } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
+import { goToStep } from '../../components/StepHeader';
 import { APPLIANCES } from '../../data/mock';
 import { haptic, PressableScale } from '../../motion';
 import { useApp } from '../../state/AppState';
@@ -24,7 +25,7 @@ export default function Kitchen() {
       footer={
         <PrimaryButton
           label={edit ? 'Done' : 'Continue'}
-          onPress={() => (edit ? router.back() : router.push('/onboarding/save'))}
+          onPress={() => (edit ? router.back() : goToStep(3, 4))}
         />
       }
     >

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Reveal } from '../motion';
 import { space, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { StepHeader } from './StepHeader';
@@ -28,13 +29,15 @@ export function OnboardingShell({
       <StepHeader step={step} backLabel={backLabel} />
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.intro}>
-            <AppText variant="largeTitle" accessibilityRole="header">
-              {title}
-            </AppText>
-            <AppText color={c.muted}>{intro}</AppText>
-          </View>
-          {children}
+          <Reveal lift={0} style={styles.stack}>
+            <View style={styles.intro}>
+              <AppText variant="largeTitle" accessibilityRole="header">
+                {title}
+              </AppText>
+              <AppText color={c.muted}>{intro}</AppText>
+            </View>
+            {children}
+          </Reveal>
         </ScrollView>
         <View style={[styles.footer, { borderTopColor: c.line }]}>{footer}</View>
       </KeyboardAvoidingView>
@@ -44,7 +47,8 @@ export function OnboardingShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 16, gap: 20 },
+  content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 16 },
+  stack: { gap: 20 },
   intro: { gap: 6 },
   footer: { paddingHorizontal: space.gutter, paddingTop: 12, gap: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });
