@@ -52,6 +52,7 @@ export default function Household() {
   return (
     <OnboardingShell
       step={2}
+      pip="love"
       backLabel={edit ? 'Back to Settings' : 'Back to step 1'}
       title="Set Up Your Household"
       intro="Kavi uses this to size portions and keep each week under budget."

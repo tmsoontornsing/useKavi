@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { Card } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
+import { Mascot } from '../../components/Mascot';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, DIETS } from '../../data/mock';
 import { openUrl, resetTo, share } from '../../navigation';
@@ -53,7 +54,7 @@ export default function Settings() {
         onPress={() => router.push('/paywall')}
         style={({ pressed }) => [styles.planCard, { backgroundColor: c.card, opacity: pressed ? 0.7 : 1 }]}
       >
-        <Image source={require('../../../assets/icon.png')} style={styles.planIcon} />
+        <Mascot pose={app.subscribed ? 'cheer' : 'sleep'} size={64} decorative style={styles.planPip} />
         <View style={styles.flex}>
           <AppText variant="headline">{app.subscribed ? 'Kavi Plus' : 'Free Plan'}</AppText>
           <AppText variant="subhead">
@@ -248,7 +249,7 @@ function SwitchRow({
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: 2 },
   planCard: { borderRadius: radius.card, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  planIcon: { width: 44, height: 44, borderRadius: 11 },
+  planPip: { marginVertical: -6, marginLeft: -4 },
   section: { gap: 6, marginBottom: 16 },
   sectionTitle: { paddingHorizontal: 16 },
   group: { overflow: 'hidden' },

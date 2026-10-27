@@ -18,6 +18,7 @@ export default function Diet() {
   return (
     <OnboardingShell
       step={1}
+      pip="think"
       backLabel={edit ? 'Back to Settings' : 'Back to welcome'}
       title="How Does Your Household Eat?"
       intro="Pick the one that fits most meals. You can change it later in Settings."

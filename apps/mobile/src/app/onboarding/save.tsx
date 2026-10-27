@@ -87,6 +87,7 @@ export default function Save() {
   return (
     <OnboardingShell
       step={4}
+      pip="save"
       backLabel={from === 'welcome' ? 'Back to welcome' : 'Back to step 3'}
       title="Save Your Plan"
       intro={

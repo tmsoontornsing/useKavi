@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Animated, Easing, useColorScheme, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Easing, Pressable, useColorScheme, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
-import { reduceMotion } from '../motion';
+import { haptic, reduceMotion } from '../motion';
 import { MASCOT_POSES, type MascotPose } from './mascotPoses.generated';
 import type { MascotAnim, MascotLayer, MascotPoseSpec } from './mascotTypes';
 
@@ -19,12 +19,14 @@ type Colors = (typeof PALETTE)['light' | 'dark'];
 // Pip, Kavi's mason jar. One pose per moment: pick the one that matches what the screen is saying.
 // Each pose has its own idle loop (a wave, a hop, steam, blinking); Reduce Motion or animate={false} shows it still.
 // Pass `label` when the pose adds meaning a screen reader needs, or `decorative` when nearby text already says it.
+// `tappable` lets people poke Pip: a little jump and squish, with a tap of haptics. It is a bonus, never the only way to do anything.
 export function Mascot({
   pose,
   size = 160,
   label,
   decorative = false,
   animate = true,
+  tappable = false,
   style,
 }: {
   pose: MascotPose;
@@ -32,6 +34,7 @@ export function Mascot({
   label?: string;
   decorative?: boolean;
   animate?: boolean;
+  tappable?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const spec: MascotPoseSpec = MASCOT_POSES[pose];
@@ -49,11 +52,24 @@ export function Mascot({
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, damping: 12, stiffness: 170, mass: 0.8 }).start();
   }, [pose, on, pop]);
 
+  // A poke: shoots up, then lands with a couple of wobbles.
+  const boing = useRef(new Animated.Value(0)).current;
+  const poke = () => {
+    haptic.tap();
+    if (!on) return;
+    boing.stopAnimation();
+    boing.setValue(0);
+    Animated.sequence([
+      Animated.timing(boing, { toValue: 1, duration: 150, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.spring(boing, { toValue: 0, useNativeDriver: true, damping: 5, stiffness: 240, mass: 0.7 }),
+    ]).start();
+  };
+
   const layer = (l: MascotLayer, i: number) => (
     <Layer key={`${pose}-${i}`} layer={l} size={size} on={on} colors={colors} />
   );
 
-  return (
+  const body = (
     <Animated.View
       accessible={!decorative}
       accessibilityRole={decorative ? undefined : 'image'}
@@ -63,8 +79,15 @@ export function Mascot({
       pointerEvents="none"
       style={[
         { width: size, height: size },
-        { opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) }] },
-        style,
+        {
+          opacity: pop,
+          transform: [
+            { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) },
+            { translateY: boing.interpolate({ inputRange: [0, 1], outputRange: [0, -size * 0.14] }) },
+            { scaleY: boing.interpolate({ inputRange: [0, 1], outputRange: [1, 1.07] }) },
+            { scaleX: boing.interpolate({ inputRange: [0, 1], outputRange: [1, 0.95] }) },
+          ],
+        },
       ]}
     >
       <Moving key={pose} anim={spec.motion} size={size} on={on}>
@@ -72,6 +95,15 @@ export function Mascot({
       </Moving>
       {spec.layers.filter((l) => l.fixed).map(layer)}
     </Animated.View>
+  );
+
+  // The caller's style lands on a wrapper so margins and absolute positions work the same tappable or not.
+  return tappable ? (
+    <Pressable accessible={false} onPress={poke} hitSlop={6} style={style}>
+      {body}
+    </Pressable>
+  ) : (
+    <View style={style}>{body}</View>
   );
 }
 

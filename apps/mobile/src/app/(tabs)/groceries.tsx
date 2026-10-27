@@ -9,7 +9,7 @@ import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
-import { animateLayout, haptic, PressableScale, reduceMotion, useCountUp } from '../../motion';
+import { animateLayout, haptic, PressableScale, reduceMotion, Reveal, useCountUp } from '../../motion';
 import { share as shareText } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -76,7 +76,9 @@ export default function Groceries() {
   return (
     <TabScreen tab="groceries" header={header}>
       <View style={styles.pantry}>
-        <AppText variant="subhead" style={styles.pantryText}>
+        <View style={styles.pantryRow}>
+          {pantrySavings > 0 ? <Mascot pose="save" size={64} decorative tappable style={styles.savePip} /> : null}
+        <AppText variant="subhead" style={[styles.pantryText, styles.flex]}>
           {shelf.length === 0 ? 'Add what you already have in Pantry and it comes off this list.' : `On your pantry shelf: ${shelfText}.`}
           {pantrySavings > 0 ? (
             <>
@@ -85,8 +87,21 @@ export default function Groceries() {
             </>
           ) : null}
         </AppText>
+        </View>
         <Image source={require('../../../assets/shelves/shelf1.png')} style={styles.shelf} resizeMode="stretch" />
       </View>
+
+      {all.length > 0 && done === all.length ? (
+        <Reveal lift={12}>
+          <Card style={styles.cartFull}>
+            <Mascot pose="cheer" size={84} decorative tappable />
+            <View style={styles.flex}>
+              <AppText variant="headline">Cart is full</AppText>
+              <AppText variant="subhead">Everything on the list is in your cart. Nice shop.</AppText>
+            </View>
+          </Card>
+        </Reveal>
+      ) : null}
 
       {all.length === 0 ? (
         <Card style={styles.emptyList}>
@@ -171,6 +186,8 @@ const styles = StyleSheet.create({
   nums: { fontVariant: ['tabular-nums'] },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pantry: { marginBottom: 2 },
+  pantryRow: { flexDirection: 'row', alignItems: 'center' },
+  savePip: { marginLeft: -6, marginVertical: -8 },
   pantryText: { paddingHorizontal: 6, paddingBottom: 4 },
   shelf: { width: '100%', height: 34 },
   aisle: { borderRadius: radius.row, overflow: 'hidden' },
@@ -184,6 +201,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   done: { textDecorationLine: 'line-through' },
+  cartFull: { padding: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
   emptyList: { padding: 16, alignItems: 'center', gap: 4 },
   centerText: { textAlign: 'center' },
   cartBar: { marginTop: 8 },

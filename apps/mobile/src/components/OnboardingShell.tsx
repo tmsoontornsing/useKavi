@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Reveal } from '../motion';
 import { space, useTheme } from '../theme';
 import { AppText } from './AppText';
+import { Mascot, type MascotPose } from './Mascot';
 import { StepHeader } from './StepHeader';
 
 // Step header, scrolling body, and a footer pinned above the home indicator, or above the keyboard while typing.
@@ -13,6 +14,7 @@ export function OnboardingShell({
   backLabel,
   title,
   intro,
+  pip = 'think',
   children,
   footer,
 }: {
@@ -20,6 +22,8 @@ export function OnboardingShell({
   backLabel: string;
   title: string;
   intro: string;
+  // Pip's pose for this question.
+  pip?: MascotPose;
   children: ReactNode;
   footer: ReactNode;
 }) {
@@ -30,11 +34,14 @@ export function OnboardingShell({
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Reveal lift={0} style={styles.stack}>
-            <View style={styles.intro}>
-              <AppText variant="largeTitle" accessibilityRole="header">
-                {title}
-              </AppText>
-              <AppText color={c.muted}>{intro}</AppText>
+            <View style={styles.introRow}>
+              <View style={styles.intro}>
+                <AppText variant="largeTitle" accessibilityRole="header">
+                  {title}
+                </AppText>
+                <AppText color={c.muted}>{intro}</AppText>
+              </View>
+              <Mascot pose={pip} size={96} decorative tappable style={styles.pip} />
             </View>
             {children}
           </Reveal>
@@ -49,6 +56,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 16 },
   stack: { gap: 20 },
-  intro: { gap: 6 },
+  introRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  intro: { flex: 1, gap: 6 },
+  pip: { marginTop: 4, marginRight: -8 },
   footer: { paddingHorizontal: space.gutter, paddingTop: 12, gap: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });

@@ -6,8 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { Card, TextButton } from '../../components/Buttons';
+import { Mascot } from '../../components/Mascot';
 import { applianceName, MEAL_LABELS, money, type RecipeView } from '../../data/mock';
-import { animateLayout, haptic, PressableScale } from '../../motion';
+import { animateLayout, haptic, PressableScale, Reveal } from '../../motion';
 import { backOr } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, space, useTheme } from '../../theme';
@@ -57,6 +58,8 @@ export default function Recipe() {
       </SafeAreaView>
     );
   }
+
+  const allDone = !!detail && detail.steps.length > 0 && detail.steps.every((_, i) => doneSteps[i]);
 
   const total = detail
     ? detail.ingredients.reduce((s, i) => s + (i.price === 'pantry' ? 0 : i.price), 0)
@@ -158,7 +161,10 @@ export default function Recipe() {
             </View>
 
             <View style={styles.section}>
-              <AppText variant="eyebrow" accessibilityRole="header">Steps</AppText>
+              <View style={styles.stepsHead}>
+                <AppText variant="eyebrow" accessibilityRole="header">Steps</AppText>
+                {allDone ? null : <Mascot pose="read" size={72} decorative tappable style={styles.reader} />}
+              </View>
               {detail.steps.map((step, i) => {
                 const done = !!doneSteps[i];
                 return (
@@ -186,6 +192,17 @@ export default function Recipe() {
                   </PressableScale>
                 );
               })}
+              {allDone ? (
+                <Reveal lift={12}>
+                  <Card style={styles.finished}>
+                    <Mascot pose="yum" size={96} decorative tappable />
+                    <View style={styles.flex}>
+                      <AppText variant="headline">Dinner is ready</AppText>
+                      <AppText variant="subhead">Every step is done. Enjoy it.</AppText>
+                    </View>
+                  </Card>
+                </Reveal>
+              ) : null}
             </View>
           </>
         ) : view === undefined ? (
@@ -222,4 +239,7 @@ const styles = StyleSheet.create({
   stepNum: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   stepDone: { textDecorationLine: 'line-through' },
   pending: { padding: 16 },
+  stepsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 },
+  reader: { marginVertical: -26 },
+  finished: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

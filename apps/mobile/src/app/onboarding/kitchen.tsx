@@ -19,6 +19,7 @@ export default function Kitchen() {
   return (
     <OnboardingShell
       step={3}
+      pip="cook"
       backLabel={edit ? 'Back to Settings' : 'Back to step 2'}
       title="What’s in Your Kitchen?"
       intro="Tick what you have. Kavi only plans meals you can cook with it."

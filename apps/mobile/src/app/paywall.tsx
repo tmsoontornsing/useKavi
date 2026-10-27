@@ -1,12 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../components/AppText';
 import { IconButton, PrimaryButton, TextButton } from '../components/Buttons';
 import { RadioDot } from '../components/Controls';
+import { Mascot } from '../components/Mascot';
 import { money, PLANS } from '../data/mock';
 import { haptic, PressableScale, Reveal } from '../motion';
 import { modalEdges, openUrl } from '../navigation';
@@ -44,7 +45,7 @@ export default function Paywall() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Reveal>
           <View style={styles.intro}>
-            <Image source={require('../../assets/icon.png')} style={styles.icon} accessibilityIgnoresInvertColors />
+            <Mascot pose="cheer" size={104} tappable label="Pip, Kavi's jar, cheering" />
             <AppText variant="largeTitle" accessibilityRole="header" style={styles.center}>
               Plan every week, stay under budget
             </AppText>
@@ -143,7 +144,6 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8 },
   content: { paddingHorizontal: space.gutter, paddingTop: 4, paddingBottom: 16, gap: 24 },
   intro: { alignItems: 'center', gap: 10 },
-  icon: { width: 72, height: 72, borderRadius: 18, marginBottom: 4 },
   center: { textAlign: 'center' },
   plans: { gap: 18, paddingTop: 8 },
   planWrap: { position: 'relative' },

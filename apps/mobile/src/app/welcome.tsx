@@ -26,7 +26,7 @@ export default function Welcome() {
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
       <PantryDrift />
       <ScrollView contentContainerStyle={styles.content}>
-        <Mascot pose="wave" size={120} label="Pip, Kavi's jar, waving hello" style={styles.pip} />
+        <Mascot pose="wave" size={120} tappable label="Pip, Kavi's jar, waving hello" style={styles.pip} />
         <View style={styles.copy}>
           <AppText style={styles.hero} accessibilityRole="header">
             Every meal of the week, inside your grocery budget.
