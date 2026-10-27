@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../components/AppText';
 import { Card, TextButton } from '../../components/Buttons';
 import { Mascot } from '../../components/Mascot';
+import { NutritionFacts } from '../../components/NutritionFacts';
 import { applianceName, MEAL_LABELS, money, type RecipeView } from '../../data/mock';
 import { animateLayout, haptic, PressableScale, Reveal } from '../../motion';
 import { backOr } from '../../navigation';
@@ -160,6 +161,13 @@ export default function Recipe() {
               <AppText variant="footnote">Pantry items cost $0 here because they’re already on your shelf.</AppText>
             </View>
 
+            {detail.nutrition ? (
+              <View style={styles.section}>
+                <AppText variant="eyebrow" accessibilityRole="header">Nutrition</AppText>
+                <NutritionFacts nutrition={detail.nutrition} serves={detail.serves} />
+              </View>
+            ) : null}
+
             <View style={styles.section}>
               <View style={styles.stepsHead}>
                 <AppText variant="eyebrow" accessibilityRole="header">Steps</AppText>
@@ -239,7 +247,7 @@ const styles = StyleSheet.create({
   stepNum: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   stepDone: { textDecorationLine: 'line-through' },
   pending: { padding: 16 },
-  stepsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 },
-  reader: { marginVertical: -26 },
+  stepsHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  reader: { marginBottom: -6 },
   finished: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

@@ -2,7 +2,8 @@
 //
 //   node supabase/scripts/import-recipes.ts <folder> [--dry-run]
 //
-// <folder> must hold ingredients.csv, recipes.csv and recipe_ingredients.csv (see README.md).
+// <folder> must hold ingredients.csv, recipes.csv and recipe_ingredients.csv, and may hold nutrition.csv
+// (see README.md).
 // --dry-run validates the files and prints counts without touching the database.
 //
 // A real run needs two environment variables. Set them in your shell, not in a file you commit:
@@ -10,7 +11,7 @@
 //   SUPABASE_SERVICE_ROLE_KEY   bypasses row-level security. Never put it in the app.
 //
 // Safe to re-run: ingredients are upserted by name (prices update), recipes already in the database
-// are left as they are, and recipe_ingredients are upserted by (recipe, ingredient).
+// are left as they are, recipe_ingredients are upserted by (recipe, ingredient), and nutrition by ingredient.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,6 +27,15 @@ if (!dir) {
   process.exit(2);
 }
 
+// nutrition.csv is optional; the others are required.
+const readOptional = (name: string) => {
+  try {
+    return readFileSync(join(dir, name), 'utf8');
+  } catch {
+    return undefined;
+  }
+};
+
 const read = (name: string) => {
   try {
     return readFileSync(join(dir, name), 'utf8');
@@ -39,6 +49,7 @@ const { catalog, errors } = parseCatalog({
   ingredients: read('ingredients.csv'),
   recipes: read('recipes.csv'),
   recipeIngredients: read('recipe_ingredients.csv'),
+  nutrition: readOptional('nutrition.csv'),
 });
 
 if (errors.length) {
@@ -49,7 +60,7 @@ if (errors.length) {
 }
 
 console.log(
-  `Valid: ${catalog.ingredients.length} ingredients, ${catalog.recipes.length} recipes, ${catalog.recipeIngredients.length} recipe lines.`,
+  `Valid: ${catalog.ingredients.length} ingredients, ${catalog.recipes.length} recipes, ${catalog.recipeIngredients.length} recipe lines, ${catalog.nutrition.length} nutrition rows.`,
 );
 if (dryRun) {
   console.log('Dry run: nothing was sent to the database.');
@@ -126,8 +137,21 @@ try {
     });
   }
 
+  // 4. Nutrition, one row per ingredient, replaced on every run so corrected figures land.
+  const facts = catalog.nutrition.map(({ ingredient_name, ...values }) => ({
+    ingredient_id: ingredientId.get(key(ingredient_name))!,
+    ...values,
+  }));
+  for (const part of chunks(facts)) {
+    await rest('ingredient_nutrition?on_conflict=ingredient_id', {
+      method: 'POST',
+      body: part,
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    });
+  }
+
   console.log(
-    `Imported: ${ingredientId.size} ingredients, ${fresh.length} new recipes (${catalog.recipes.length - fresh.length} already existed and were left unchanged), ${lines.length} recipe lines.`,
+    `Imported: ${ingredientId.size} ingredients, ${fresh.length} new recipes (${catalog.recipes.length - fresh.length} already existed and were left unchanged), ${lines.length} recipe lines, ${facts.length} nutrition rows.`,
   );
 } catch (e) {
   console.error(`Import stopped: ${(e as Error).message}`);

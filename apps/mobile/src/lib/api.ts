@@ -16,6 +16,7 @@ import {
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
+import { perServing, type IngredientNutrition } from './nutrition';
 import { supabase } from './supabase';
 
 // Every read and write the app makes to Supabase. All of it runs as the signed-in user, so row-level
@@ -162,13 +163,26 @@ export async function removePantryItem(userId: string, name: string) {
 
 // ---- Week plan
 
+// Each ingredient's nutrition row, embedded in recipe queries. It is one-to-one, so it comes back as an object.
+const NUTRITION = 'nutrition:ingredient_nutrition(grams_per_unit, kcal, protein_g, carbs_g, fiber_g, sugar_g, fat_g, sat_fat_g, cholesterol_mg, sodium_mg)';
+
 type RecipeRow = {
   id: string;
   title: string;
   minutes: number;
   servings: number;
   tags: string[];
-  recipe_ingredients: { quantity: number; ingredient: { avg_price_usd: number } | null }[];
+  recipe_ingredients: { quantity: number; ingredient: { name: string; avg_price_usd: number; nutrition: IngredientNutrition | null } | null }[];
+};
+
+// Per-serving nutrition for a recipe, or undefined when none of its ingredients have data yet.
+const servingNutrition = (lines: RecipeRow['recipe_ingredients'], servings: number) => {
+  const known = lines.filter((l) => l.ingredient);
+  const result = perServing(
+    known.map((l) => ({ name: l.ingredient!.name, quantity: Number(l.quantity), nutrition: l.ingredient!.nutrition })),
+    servings,
+  );
+  return result.missing.length === known.length ? undefined : result;
 };
 
 const needs = (tags: string[]) => tags.filter((t) => t.startsWith('needs-')).map((t) => t.slice('needs-'.length));
@@ -211,7 +225,7 @@ export async function loadWeek(
     await db()
       .from('meal_plan_items')
       .select(
-        'day_of_week, meal_type, recipe:recipes(id, title, minutes, servings, tags, recipe_ingredients(quantity, ingredient:ingredients(avg_price_usd)))',
+        `day_of_week, meal_type, recipe:recipes(id, title, minutes, servings, tags, recipe_ingredients(quantity, ingredient:ingredients(name, avg_price_usd, ${NUTRITION})))`,
       )
       .eq('plan_id', plan.id)
       .returns<{ day_of_week: number; meal_type: MealType; recipe: RecipeRow | null }[]>(),
@@ -227,6 +241,7 @@ export async function loadWeek(
       type: item.meal_type,
       minutes: `${item.recipe.minutes} min`,
       cost: Math.round((baseCost(item.recipe) * people) / item.recipe.servings),
+      nutrition: servingNutrition(item.recipe.recipe_ingredients, item.recipe.servings)?.perServing,
       day,
       dayLong,
       slot,
@@ -312,7 +327,7 @@ export async function loadRecipe(
   const r = check(
     await db()
       .from('recipes')
-      .select('id, title, minutes, servings, steps, tags, recipe_ingredients(quantity, unit, ingredient:ingredients(name, avg_price_usd))')
+      .select(`id, title, minutes, servings, steps, tags, recipe_ingredients(quantity, unit, ingredient:ingredients(name, avg_price_usd, ${NUTRITION}))`)
       .eq('id', recipeId)
       .maybeSingle()
       .returns<{
@@ -322,7 +337,7 @@ export async function loadRecipe(
         servings: number;
         steps: string;
         tags: string[];
-        recipe_ingredients: { quantity: number; unit: string; ingredient: { name: string; avg_price_usd: number } | null }[];
+        recipe_ingredients: (RecipeRow['recipe_ingredients'][number] & { unit: string })[];
       } | null>(),
   );
   if (!r) return null;
@@ -341,9 +356,13 @@ export async function loadRecipe(
       };
     }),
     steps: r.steps.split('\n').map((s) => s.trim()).filter(Boolean),
+    nutrition: servingNutrition(r.recipe_ingredients, r.servings),
   };
   const cost = lines.reduce((sum, l) => sum + Number(l.quantity) * scale * Number(l.ingredient!.avg_price_usd), 0);
-  return { meal: { id: r.id, name: r.title, type, minutes: `${r.minutes} min`, cost: Math.round(cost) }, detail };
+  return {
+    meal: { id: r.id, name: r.title, type, minutes: `${r.minutes} min`, cost: Math.round(cost), nutrition: detail.nutrition?.perServing },
+    detail,
+  };
 }
 
 // ---- Edge Functions

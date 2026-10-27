@@ -1,6 +1,6 @@
 # Recipe catalog import
 
-Loads ingredients and recipes into Supabase from three CSV files.
+Loads ingredients, recipes and, optionally, nutrition into Supabase from CSV files.
 
 ```bash
 # Check the files without touching the database
@@ -12,14 +12,15 @@ export SUPABASE_SERVICE_ROLE_KEY=<service role key>
 node supabase/scripts/import-recipes.ts <folder>
 
 # Tests
-node --test supabase/scripts/recipe-csv.test.ts
+node --test supabase/scripts/*.test.ts
 ```
 
 Needs Node 23.6 or newer (it runs the `.ts` files directly). `sample-data/` holds seven placeholder
 recipes for trying the importer. It is not real catalog data and should not be imported into production.
 
 Re-running is safe. Ingredients are upserted by name (prices update), recipes that already exist by
-title are left unchanged, and recipe lines are upserted by recipe and ingredient.
+title are left unchanged, and recipe lines are upserted by recipe and ingredient. Nutrition rows are
+upserted by ingredient, so corrected figures replace the old ones.
 
 ## Files
 
@@ -38,6 +39,16 @@ quote, or line break.
 
 `unit` must equal the ingredient's pricing unit, so a recipe's cost is exactly the sum of
 quantity x price. Convert to that unit when preparing the data.
+
+**nutrition.csv** (optional): `ingredient_name, grams_per_unit, kcal, protein_g, carbs_g, fiber_g, sugar_g,
+fat_g, sat_fat_g, cholesterol_mg, sodium_mg`
+
+Every nutrient is per 100 g, the way USDA FoodData Central lists them, so values can be checked against it
+directly. `grams_per_unit` is what one of the ingredient's pricing units weighs: 453.6 for `lb`, about 50 for
+one `each` egg, 13.5 for a `tbsp` of oil. The app works out each recipe line as
+quantity x grams_per_unit / 100 x the value, sums the lines, and divides by servings. An ingredient with no
+row is left out of the totals, and the recipe screen says which ones. The importer rejects rows whose
+protein, carbs and fat exceed 100 g, or whose fiber, sugar or saturated fat exceed their totals.
 
 ## Tags the plan function understands
 

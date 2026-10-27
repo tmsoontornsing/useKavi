@@ -11,6 +11,13 @@ node supabase/scripts/import-recipes.ts supabase/catalog/starter             # i
 
 ## Review before importing
 
+- **Nutrition (`nutrition.csv`) is drafted from typical USDA values, not looked up one by one.** It is per
+  100 g, so each row can be checked against [USDA FoodData Central](https://fdc.nal.usda.gov). The
+  `grams_per_unit` weights (a medium onion is 110 g, a bunch of cilantro 60 g, a bag of spinach 284 g) are
+  the guesses most worth checking. Meat is raw weight, and bacon counts all its fat even though much
+  renders out. Branded items (broth, salsa, tortillas, deli turkey) vary a lot in sodium between brands.
+  `catalog-nutrition.test.ts` cross-checks each row's calories against its protein, carbs and fat.
+
 - **Prices are rough US averages**, written from general knowledge, not looked up. They drive every
   cost estimate and budget warning, so check or replace them. Edit `avg_price_usd` in `ingredients.csv`;
   re-importing updates prices.

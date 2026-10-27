@@ -10,6 +10,7 @@ import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
+import { add, labelRound, zero } from '../../lib/nutrition';
 import { Reveal, useCountUp } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -72,12 +73,19 @@ export default function Week() {
 function DayCard({ meals }: { meals: PlannedMeal[] }) {
   const c = useTheme();
   const total = meals.reduce((sum, m) => sum + m.cost, 0);
+  // One person's day, shown only when every meal has nutrition data, so a partial total never looks complete.
+  const day = meals.every((m) => m.nutrition) ? meals.reduce((d, m) => add(d, m.nutrition!), zero()) : null;
   return (
     <Card style={styles.dayCard}>
       <View style={styles.dayHead}>
         <AppText variant="eyebrow" accessibilityRole="header">{meals[0].dayLong}</AppText>
         <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{`$${total} est.`}</AppText>
       </View>
+      {day ? (
+        <AppText variant="footnote" style={styles.dayNutrition}>
+          {`Per person: ${labelRound('kcal', day.kcal).toLocaleString('en-US')} cal · ${labelRound('protein_g', day.protein_g)} g protein · ${labelRound('sodium_mg', day.sodium_mg).toLocaleString('en-US')} mg sodium`}
+        </AppText>
+      ) : null}
       {meals.map((meal) => (
         <SwipeRow
           key={meal.slot}
@@ -131,6 +139,12 @@ function MealMeta({ meal }: { meal: PlannedMeal }) {
       <View style={styles.metaRow}>
         <AppText variant="subhead">{meal.minutes}</AppText>
         <AppText variant="subhead" color={c.muted}>·</AppText>
+        {meal.nutrition ? (
+          <>
+            <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{`${labelRound('kcal', meal.nutrition.kcal)} cal`}</AppText>
+            <AppText variant="subhead" color={c.muted}>·</AppText>
+          </>
+        ) : null}
         <AppText variant="subhead" weight="600" color={c.primaryText}>Recipe</AppText>
         <Ionicons name="chevron-forward" size={13} color={c.primaryText} />
       </View>
@@ -237,6 +251,7 @@ const styles = StyleSheet.create({
   budgetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   warning: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', padding: 12, borderRadius: radius.control },
   dayCard: { borderRadius: radius.row, overflow: 'hidden' },
+  dayNutrition: { paddingHorizontal: 14, marginTop: -4, paddingBottom: 8, fontVariant: ['tabular-nums'] },
   dayHead: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   meal: {
     paddingVertical: 10,

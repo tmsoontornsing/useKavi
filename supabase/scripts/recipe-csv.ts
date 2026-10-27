@@ -4,11 +4,38 @@
 export type IngredientRow = { name: string; aisle: string; avg_price_usd: number; unit: string };
 export type RecipeRow = { title: string; steps: string; servings: number; minutes: number; tags: string[] };
 export type RecipeIngredientRow = { recipe_title: string; ingredient_name: string; quantity: number; unit: string };
+// Nutrients in 100 g of the ingredient, and how many grams one of its pricing units weighs.
+export type NutritionRow = {
+  ingredient_name: string;
+  grams_per_unit: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  fat_g: number;
+  sat_fat_g: number;
+  cholesterol_mg: number;
+  sodium_mg: number;
+};
 export type Catalog = {
   ingredients: IngredientRow[];
   recipes: RecipeRow[];
   recipeIngredients: RecipeIngredientRow[];
+  nutrition: NutritionRow[];
 };
+
+export const NUTRITION_COLUMNS = [
+  'kcal',
+  'protein_g',
+  'carbs_g',
+  'fiber_g',
+  'sugar_g',
+  'fat_g',
+  'sat_fat_g',
+  'cholesterol_mg',
+  'sodium_mg',
+] as const;
 
 // Every recipe needs at least one of these tags: the meals it can be planned for.
 export const MEAL_TAGS = ['breakfast', 'lunch', 'dinner'] as const;
@@ -102,7 +129,8 @@ const num = (s: string) => {
 };
 const cents = (n: number) => Math.round(n * 100) / 100;
 
-export function parseCatalog(files: { ingredients: string; recipes: string; recipeIngredients: string }): {
+// `nutrition` is optional: without it, recipes import with no nutrition facts.
+export function parseCatalog(files: { ingredients: string; recipes: string; recipeIngredients: string; nutrition?: string }): {
   catalog: Catalog;
   errors: string[];
 } {
@@ -198,5 +226,52 @@ export function parseCatalog(files: { ingredients: string; recipes: string; reci
     if (!hasIngredients.has(key(r.title))) errors.push(`recipe "${r.title}" has no valid ingredient lines in recipe_ingredients.csv`);
   }
 
-  return { catalog: { ingredients, recipes, recipeIngredients }, errors };
+  const nutrition: NutritionRow[] = [];
+  if (files.nutrition !== undefined) {
+    const seenNutrition = new Set<string>();
+    const columns = ['ingredient_name', 'grams_per_unit', ...NUTRITION_COLUMNS];
+    for (const { row, v } of table(files.nutrition, 'nutrition.csv', columns, errors)) {
+      const where = `nutrition.csv row ${row}`;
+      const ingredient = ingredientByKey.get(key(v.ingredient_name));
+      let ok = true;
+      if (!ingredient) {
+        errors.push(`${where}: ingredient "${v.ingredient_name}" is not in ingredients.csv`);
+        ok = false;
+      } else if (seenNutrition.has(key(ingredient.name))) {
+        errors.push(`${where}: duplicate nutrition for "${v.ingredient_name}"`);
+        ok = false;
+      }
+      const grams = num(v.grams_per_unit);
+      if (!Number.isFinite(grams) || grams <= 0) {
+        errors.push(`${where}: grams_per_unit must be a number above 0, got "${v.grams_per_unit}"`);
+        ok = false;
+      }
+      const values: Record<string, number> = {};
+      for (const c of NUTRITION_COLUMNS) {
+        const n = num(v[c]);
+        // Salt is about 39,000 mg sodium per 100 g, the highest anything here should reach.
+        if (!Number.isFinite(n) || n < 0 || n > 40000) {
+          errors.push(`${where}: ${c} must be a number from 0 to 40000, got "${v[c]}"`);
+          ok = false;
+        }
+        values[c] = n;
+      }
+      // Grams of anything cannot exceed the 100 g they are measured in.
+      const grams100 = values.protein_g + values.carbs_g + values.fat_g;
+      if (ok && grams100 > 100.5) {
+        errors.push(`${where}: protein, carbs and fat add up to ${grams100} g, more than the 100 g they are measured in`);
+        ok = false;
+      }
+      if (ok && (values.fiber_g > values.carbs_g + 0.05 || values.sugar_g > values.carbs_g + 0.05 || values.sat_fat_g > values.fat_g + 0.05)) {
+        errors.push(`${where}: fiber and sugar must not exceed carbs, and saturated fat must not exceed fat`);
+        ok = false;
+      }
+      if (ok && ingredient) {
+        seenNutrition.add(key(ingredient.name));
+        nutrition.push({ ingredient_name: ingredient.name, grams_per_unit: grams, ...(values as Omit<NutritionRow, 'ingredient_name' | 'grams_per_unit'>) });
+      }
+    }
+  }
+
+  return { catalog: { ingredients, recipes, recipeIngredients, nutrition }, errors };
 }

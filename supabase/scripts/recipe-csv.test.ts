@@ -79,3 +79,42 @@ test('prices accept a dollar sign', () => {
   assert.deepEqual(errors, []);
   assert.equal(c.ingredients[0].avg_price_usd, 4.5);
 });
+
+const NUT = 'ingredient_name,grams_per_unit,kcal,protein_g,carbs_g,fiber_g,sugar_g,fat_g,sat_fat_g,cholesterol_mg,sodium_mg\n';
+
+test('nutrition is optional and parses when given', () => {
+  assert.deepEqual(catalog().catalog.nutrition, []);
+  const { catalog: c, errors } = parseCatalog({
+    ingredients: ING,
+    recipes: REC,
+    recipeIngredients: LINES,
+    nutrition: NUT + 'chicken,453.6,120,22.5,0,0,0,2.6,0.6,73,45\n',
+  });
+  assert.deepEqual(errors, []);
+  assert.equal(c.nutrition[0].ingredient_name, 'Chicken');
+  assert.equal(c.nutrition[0].sodium_mg, 45);
+});
+
+test('nutrition rows with unknown names, bad numbers, or impossible totals are reported', () => {
+  const { errors } = parseCatalog({
+    ingredients: ING,
+    recipes: REC,
+    recipeIngredients: LINES,
+    nutrition:
+      NUT +
+      'Tofu,100,1,1,1,0,0,1,0,0,0\n' +
+      'Chicken,0,120,22.5,0,0,0,2.6,0.6,73,45\n' +
+      'Oil,13.5,884,0,0,0,0,100,13.8,0,2\n' +
+      'oil,13.5,884,0,0,0,0,100,13.8,0,2\n',
+  });
+  assert.ok(errors.some((e) => /row 1: ingredient "Tofu" is not in ingredients\.csv/.test(e)));
+  assert.ok(errors.some((e) => /row 2: grams_per_unit must be a number above 0/.test(e)));
+  assert.ok(errors.some((e) => /row 4: duplicate nutrition for "oil"/.test(e)));
+  const { errors: totals } = parseCatalog({
+    ingredients: ING,
+    recipes: REC,
+    recipeIngredients: LINES,
+    nutrition: NUT + 'Chicken,453.6,500,60,30,40,0,20,25,0,0\n',
+  });
+  assert.ok(totals.some((e) => /add up to 110 g/.test(e)));
+});

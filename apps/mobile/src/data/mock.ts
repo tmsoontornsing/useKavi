@@ -1,5 +1,7 @@
 // Example data from the mockups. It stands in for Supabase until the backend is wired up.
 
+import type { Nutrients, ServingNutrition } from '../lib/nutrition';
+
 export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 export const MEAL_LABELS: Record<MealType, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' };
@@ -10,6 +12,8 @@ export type Meal = {
   type: MealType;
   minutes: string;
   cost: number;
+  // Per serving, when the recipe's ingredients have nutrition data. Example data has none.
+  nutrition?: Nutrients;
 };
 
 // A meal placed in the week. `slot` is its position in the 21-slot plan: day * 3 + the meal type's order.
@@ -107,6 +111,8 @@ export type RecipeDetail = {
   appliances: ApplianceId[];
   ingredients: { name: string; price: number | 'pantry' }[];
   steps: string[];
+  // Per serving, estimated from the ingredients. Absent when no ingredient has nutrition data.
+  nutrition?: ServingNutrition;
 };
 
 // What the recipe screen shows: the meal, and its ingredients and steps when they are available.
