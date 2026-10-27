@@ -218,13 +218,6 @@ function BudgetCard({ over }: { over: boolean }) {
   const { planTotal, budget } = useApp();
   const left = budget - planTotal;
   const shownTotal = Math.round(useCountUp(planTotal));
-  // Pip celebrates when the week comes in under budget, then settles so it does not bounce all week.
-  const [celebrating, setCelebrating] = useState(true);
-  useEffect(() => {
-    setCelebrating(true);
-    const id = setTimeout(() => setCelebrating(false), 4000);
-    return () => clearTimeout(id);
-  }, [planTotal, budget]);
   return (
     <Card style={styles.budget}>
       <View style={styles.budgetHead}>
@@ -250,7 +243,7 @@ function BudgetCard({ over }: { over: boolean }) {
       ) : (
         <View style={styles.underRow}>
           <AppText variant="subhead" color={c.primaryText} weight="500" style={styles.flex}>${left} left this week</AppText>
-          <Mascot pose="cheer" size={64} animate={celebrating} decorative style={styles.cheer} />
+          <Mascot pose="cheer" size={64} decorative style={styles.cheer} />
         </View>
       )}
     </Card>
