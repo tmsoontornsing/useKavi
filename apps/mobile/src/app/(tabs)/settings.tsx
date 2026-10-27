@@ -9,6 +9,7 @@ import { KaviSwitch } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, DIETS } from '../../data/mock';
+import { LEGAL } from '../../legal/config';
 import { openUrl, resetTo, share } from '../../navigation';
 import { useApp, type PlanStatus } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -116,7 +117,9 @@ export default function Settings() {
       </Section>
 
       <Section title="About">
-        <ActionRow label="Terms and Privacy" onPress={() => openUrl('https://usekavi.com')} first chevron />
+        <ActionRow label="Terms of Service" onPress={() => router.push('/legal/terms')} first chevron />
+        <ActionRow label="Privacy Policy" onPress={() => router.push('/legal/privacy')} chevron />
+        <ActionRow label="Contact Us" onPress={() => openUrl(`mailto:${LEGAL.email}`)} chevron />
         <StaticRow label="Version" value="1.0.0" />
       </Section>
 

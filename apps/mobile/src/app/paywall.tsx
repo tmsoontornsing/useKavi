@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../components/AppText';
@@ -10,7 +10,7 @@ import { RadioDot } from '../components/Controls';
 import { Mascot } from '../components/Mascot';
 import { money, PLANS } from '../data/mock';
 import { haptic, PressableScale, Reveal } from '../motion';
-import { modalEdges, openUrl } from '../navigation';
+import { modalEdges } from '../navigation';
 import { useApp } from '../state/AppState';
 import { fonts, radius, space, useTheme } from '../theme';
 
@@ -19,6 +19,12 @@ const BENEFITS = [
   'Swap any meal and watch the budget update',
   'Share the grocery list with everyone at home',
 ];
+
+// Where the subscription is billed and managed, named the way each store does.
+const STORE =
+  Platform.OS === 'ios'
+    ? { account: 'Apple ID', settings: 'your App Store account settings' }
+    : { account: 'Google Play account', settings: 'Google Play, under Payments and subscriptions' };
 
 const price = (n: number) => (Number.isInteger(n) ? `$${n}` : money(n));
 
@@ -127,11 +133,14 @@ export default function Paywall() {
           }}
         />
         <AppText variant="footnote" style={styles.center}>
-          {`Auto-renews at ${price(chosen.price)}/${chosen.per}. Cancel anytime.`}
+          {`Kavi Plus renews automatically at ${price(chosen.price)} per ${chosen.per} until you cancel. ` +
+            `Payment is charged to your ${STORE.account} when you confirm. Turn off auto-renew at least 24 hours before ` +
+            `the period ends to avoid the next charge. Manage or cancel any time in ${STORE.settings}.`}
         </AppText>
         <View style={styles.links}>
           <TextButton label="Not Now" bold={false} color={c.muted} onPress={() => router.back()} />
-          <TextButton label="Terms and Privacy" bold={false} color={c.muted} onPress={() => openUrl('https://usekavi.com')} />
+          <TextButton label="Terms" bold={false} color={c.muted} onPress={() => router.push('/legal/terms')} />
+          <TextButton label="Privacy" bold={false} color={c.muted} onPress={() => router.push('/legal/privacy')} />
         </View>
       </View>
     </SafeAreaView>

@@ -124,11 +124,17 @@ export default function Household() {
       </Card>
 
       <View style={styles.group}>
-        <AppText variant="eyebrow" accessibilityRole="header">Allergies, always avoided</AppText>
+        <AppText variant="eyebrow" accessibilityRole="header">Allergies to avoid</AppText>
         <View style={styles.chips}>
           {ALLERGIES.map((a) => (
             <Chip key={a} label={a} selected={app.allergies.includes(a)} onPress={() => app.toggleAllergy(a)} />
           ))}
+        </View>
+        <View style={[styles.allergyNote, { backgroundColor: c.warnBg }]}>
+          <AppText variant="footnote" color={c.warn}>
+            Kavi leaves out recipes tagged with these allergens, but tags can be wrong and products vary by brand.
+            Always read labels, and check every ingredient yourself if an allergy is severe.
+          </AppText>
         </View>
       </View>
 
@@ -185,5 +191,6 @@ const styles = StyleSheet.create({
   scale: { flexDirection: 'row', justifyContent: 'space-between' },
   group: { gap: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  allergyNote: { borderRadius: radius.row, paddingHorizontal: 12, paddingVertical: 10 },
   foodInput: { minHeight: 44, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17 },
 });

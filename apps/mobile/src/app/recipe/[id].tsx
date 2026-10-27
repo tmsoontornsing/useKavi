@@ -159,6 +159,11 @@ export default function Recipe() {
                 ))}
               </Card>
               <AppText variant="footnote">Pantry items cost $0 here because they’re already on your shelf.</AppText>
+              {app.allergies.length > 0 ? (
+                <AppText variant="footnote" color={c.warn}>
+                  {`Check every label for ${app.allergies.join(', ').toLowerCase()}. Products vary by brand, and Kavi can’t guarantee a recipe is allergen-free.`}
+                </AppText>
+              ) : null}
             </View>
 
             {detail.nutrition ? (

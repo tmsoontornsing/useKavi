@@ -101,7 +101,7 @@ export function NutritionFacts({ nutrition, serves }: { nutrition: ServingNutrit
       </View>
 
       <AppText variant="footnote">
-        {`Estimated from the ingredients, for one of ${serves} servings. % Daily Value is based on 2,000 calories a day.`}
+        {`Estimated from the ingredients, for one of ${serves} servings. % Daily Value is based on 2,000 calories a day. A guide, not medical advice.`}
         {nutrition.missing.length ? ` Not counted, no data yet: ${nutrition.missing.join(', ').toLowerCase()}.` : ''}
       </AppText>
     </Card>

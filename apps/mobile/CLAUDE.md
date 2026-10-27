@@ -9,3 +9,7 @@ Pip is also the app icon, splash screen, and every marketing image. `scripts/bui
 ## Nutrition
 
 Each recipe's calories, protein, carbs, fiber, sugars, fat, saturated fat, cholesterol and sodium are estimated per serving from its ingredients. The figures live in the `ingredient_nutrition` table (per 100 g, plus the grams in one pricing unit), loaded from `supabase/catalog/starter/nutrition.csv` by the import script. `src/lib/nutrition.ts` does the math and the label rounding; `api.ts` attaches `nutrition` to each meal and recipe; `NutritionFacts` shows the recipe's label, and the week shows calories per meal and a per-person total for each day. Example data has no nutrition, so those parts stay hidden there.
+
+## Legal
+
+The Terms of Service and Privacy Policy live in `src/legal/documents.ts`, with business details in `src/legal/config.ts`. The app shows them at `/legal/terms` and `/legal/privacy`; `node scripts/build-legal.mjs` writes the same text to `legal/*.md` for the website. When Kavi starts collecting new data or uses a new service, update the Privacy Policy and the store privacy forms in the same change. `docs/legal-checklist.md` lists what must happen before release. Never describe allergen filtering, prices, or nutrition as guaranteed in UI copy.

@@ -114,7 +114,15 @@ export default function Save() {
             </AppText>
           ) : null}
           <AppText variant="footnote" style={styles.center}>
-            Kavi only uses your account to save settings and sync your list.
+            {'By continuing, you agree to the '}
+            <AppText variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
+              Terms of Service
+            </AppText>
+            {' and acknowledge the '}
+            <AppText variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
+              Privacy Policy
+            </AppText>
+            . Kavi uses your account only to save your settings and sync your list.
           </AppText>
         </>
       }
