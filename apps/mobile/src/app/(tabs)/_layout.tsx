@@ -1,12 +1,12 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 
-import { useTheme } from '../../theme';
+import { fonts, useTheme } from '../../theme';
 
 // System tab bar (UITabBar on iOS, Material bottom navigation on Android).
 export default function TabsLayout() {
   const c = useTheme();
   return (
-    <NativeTabs tintColor={c.primary}>
+    <NativeTabs tintColor={c.primary} labelStyle={{ fontFamily: fonts.medium, fontSize: 11 }}>
       <NativeTabs.Trigger name="week">
         <NativeTabs.Trigger.Label>This Week</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="calendar" md="calendar_month" />

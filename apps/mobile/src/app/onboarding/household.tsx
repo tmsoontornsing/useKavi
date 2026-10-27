@@ -192,5 +192,5 @@ const styles = StyleSheet.create({
   group: { gap: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   allergyNote: { borderRadius: radius.row, paddingHorizontal: 12, paddingVertical: 10 },
-  foodInput: { minHeight: 44, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17 },
+  foodInput: { minHeight: 44, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17, fontFamily: fonts.regular },
 });

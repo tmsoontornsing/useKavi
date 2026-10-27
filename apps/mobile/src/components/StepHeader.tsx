@@ -4,7 +4,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import { backOr } from '../navigation';
 import { haptic, reduceMotion } from '../motion';
-import { fonts, radius, useTheme } from '../theme';
+import { radius, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { IconButton } from './Buttons';
 
@@ -81,7 +81,8 @@ export function StepHeader({ step, backLabel }: { step: 1 | 2 | 3 | 4; backLabel
               <AppText
                 numberOfLines={1}
                 color={active ? c.primaryText : c.text}
-                style={{ fontFamily: active ? fonts.displaySemi : undefined, fontSize: 15 }}
+                weight={active ? '600' : '500'}
+                style={{ fontSize: 15 }}
               >
                 {tab.label}
               </AppText>

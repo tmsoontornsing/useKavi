@@ -21,3 +21,7 @@ The grocery list's checkbox button sends unchecked items to a "Kavi Groceries" l
 ## Widgets
 
 Two home screen widgets live in `widgets/`: Today's Meals (`KaviToday.tsx`) and Grocery List (`KaviGroceries.tsx`), registered in the `expo-widgets` entry of `app.json`. `src/lib/widgets.ts` sends them data whenever the plan or list changes. Widget code runs in an isolated runtime with no hooks and no app imports, and props travel as plain values: send a list as one string joined with "|", not an array. Widgets need a native build (`npx expo run:ios`); Expo Go cannot show them. If a build fails on Desktop with "resource fork, Finder information, or similar detritus not allowed", iCloud is syncing the project; build from a copy outside Desktop and Documents, and run with `LANG=en_US.UTF-8`.
+
+## Typography
+
+Outfit is the one typeface for everything Kavi draws, loaded in `src/app/_layout.tsx` and named in `fonts` in `src/theme/index.ts`. Always use `<AppText>`, which picks the family from the variant or from `weight`. Do not set `fontWeight` on its own: custom fonts ship one file per weight, so a weight only works by choosing a family (`fonts.regular`, `fonts.medium`, `fonts.displaySemi`, `fonts.display`). A raw `TextInput` needs `fontFamily: fonts.regular` in its style. Only system UI (alerts, the keyboard, share sheets) stays in the system font. `AppText` also adds a hair space around " · " separators, since Outfit sets that dot tight.

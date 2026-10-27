@@ -51,10 +51,13 @@ export function useTheme(): Palette {
   return useColorScheme() === 'dark' ? dark : light;
 }
 
-// Outfit is the display face for headings and money; body text and controls use the system font.
+// Outfit is the one typeface for everything Kavi draws: headings, numbers, buttons, labels, body text, and inputs.
+// <AppText> picks the weight for you. Only the system's own pieces (alerts, the keyboard, share sheets) use the system font.
 export const fonts = {
   display: 'Outfit_700Bold',
   displaySemi: 'Outfit_600SemiBold',
+  medium: 'Outfit_500Medium',
+  regular: 'Outfit_400Regular',
 };
 
 export const radius = { card: 16, row: 14, pill: 999, control: 12 };

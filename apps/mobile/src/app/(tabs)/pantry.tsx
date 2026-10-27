@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: 4, paddingVertical: 8 },
   center: { textAlign: 'center' },
   addCard: { padding: 14, gap: 12 },
-  input: { minHeight: 46, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17 },
+  input: { minHeight: 46, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17, fontFamily: fonts.regular },
   pickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pick: { minHeight: 36, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: 6 },
   quick: { gap: 8 },

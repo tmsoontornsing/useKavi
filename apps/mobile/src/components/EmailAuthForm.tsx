@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  input: { minHeight: 48, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 14, fontSize: 17 },
+  input: { minHeight: 48, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 14, fontSize: 17, fontFamily: fonts.regular },
   password: { paddingRight: 48 },
   eye: { position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' },
   meterRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
