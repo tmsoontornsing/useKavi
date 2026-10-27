@@ -13,7 +13,7 @@ import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
 import { add, labelRound, zero } from '../../lib/nutrition';
 import { Reveal, useCountUp } from '../../motion';
 import { useApp } from '../../state/AppState';
-import { radius, useTheme } from '../../theme';
+import { fonts, radius, useTheme } from '../../theme';
 
 export default function Week() {
   const c = useTheme();
@@ -73,91 +73,143 @@ export default function Week() {
   );
 }
 
-// One day: its name and cost, then breakfast, lunch, and dinner, each opening its recipe or its swap sheet.
+const MEAL_ICON = { breakfast: 'sunny-outline', lunch: 'partly-sunny-outline', dinner: 'moon-outline' } as const;
+
+const openRecipe = (meal: PlannedMeal) =>
+  router.push({ pathname: '/recipe/[id]', params: { id: meal.id, slot: String(meal.slot) } });
+const openSwap = (meal: PlannedMeal) => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } });
+
+// Equipment the household lacks, as a warning line, or null when the meal is cookable.
+function useMissing(meal: PlannedMeal) {
+  const { appliances } = useApp();
+  const needs = meal.appliances.filter((a) => !(appliances as string[]).includes(a));
+  return needs.length > 0 ? `Needs a ${needs.map((n) => applianceName(n).toLowerCase()).join(' and ')}` : null;
+}
+
+// One day. The day's name leads, with the day's cost and one person's nutrition. Breakfast and lunch sit side by side as
+// small tiles; dinner, the meal the day builds toward, gets the full-width row. Today's card is tinted and tagged.
 function DayCard({ meals }: { meals: PlannedMeal[] }) {
   const c = useTheme();
+  const [breakfast, lunch, dinner] = meals;
   const total = meals.reduce((sum, m) => sum + m.cost, 0);
   // One person's day, shown only when every meal has nutrition data, so a partial total never looks complete.
   const day = meals.every((m) => m.nutrition) ? meals.reduce((d, m) => add(d, m.nutrition!), zero()) : null;
+  const isToday = Math.floor(breakfast.slot / 3) === (new Date().getDay() + 6) % 7;
+
   return (
     <Card style={styles.dayCard}>
-      <View style={styles.dayHead}>
-        <AppText variant="eyebrow" accessibilityRole="header">{meals[0].dayLong}</AppText>
-        <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{`$${total} est.`}</AppText>
-      </View>
-      {day ? (
-        <AppText variant="footnote" style={styles.dayNutrition}>
-          {`Per person: ${labelRound('kcal', day.kcal).toLocaleString('en-US')} cal · ${labelRound('protein_g', day.protein_g)} g protein · ${labelRound('sodium_mg', day.sodium_mg).toLocaleString('en-US')} mg sodium`}
-        </AppText>
-      ) : null}
-      {meals.map((meal) => (
-        <SwipeRow
-          key={meal.slot}
-          background={c.card}
-          start={{
-            label: 'Recipe',
-            icon: 'book-outline',
-            background: c.tint,
-            foreground: c.primaryText,
-            onTrigger: () => router.push({ pathname: '/recipe/[id]', params: { id: meal.id, slot: String(meal.slot) } }),
-          }}
-          end={{
-            label: 'Swap',
-            icon: 'swap-horizontal',
-            background: c.primary,
-            foreground: c.onPrimary,
-            onTrigger: () => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } }),
-          }}
-        >
-        <View style={[styles.meal, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }]}>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityHint="Opens the recipe"
-            onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: meal.id, slot: String(meal.slot) } })}
-            style={({ pressed }) => [styles.mealText, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <AppText variant="eyebrow" color={c.primaryText}>{MEAL_LABELS[meal.type]}</AppText>
-            <AppText variant="headline">{meal.name}</AppText>
-            <MealMeta meal={meal} />
-          </Pressable>
-          <AppText variant="money" style={styles.cost}>${meal.cost}</AppText>
-          <IconButton
-            icon="swap-horizontal"
-            label={`Swap ${meal.dayLong} ${MEAL_LABELS[meal.type].toLowerCase()}: ${meal.name}`}
-            onPress={() => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } })}
-          />
+      <View style={[styles.dayHead, isToday && { backgroundColor: c.tint }]}>
+        <View style={styles.dayTitle}>
+          <AppText style={styles.dayName} accessibilityRole="header">{breakfast.dayLong}</AppText>
+          {isToday ? (
+            <View style={[styles.todayTag, { backgroundColor: c.primary }]}>
+              <AppText variant="footnote" weight="700" color={c.onPrimary}>TODAY</AppText>
+            </View>
+          ) : null}
         </View>
-        </SwipeRow>
-      ))}
+        <View style={styles.dayCost}>
+          <AppText variant="money">{`$${total}`}</AppText>
+          <AppText variant="footnote">est.</AppText>
+        </View>
+        {day ? (
+          <AppText variant="footnote" style={styles.dayNutrition}>
+            {`Per person ${labelRound('kcal', day.kcal).toLocaleString('en-US')} cal · ${labelRound('protein_g', day.protein_g)} g protein · ${labelRound('sodium_mg', day.sodium_mg).toLocaleString('en-US')} mg sodium`}
+          </AppText>
+        ) : null}
+      </View>
+
+      <View style={styles.pair}>
+        <MealTile meal={breakfast} />
+        <MealTile meal={lunch} />
+      </View>
+
+      <SwipeRow
+        background={c.card}
+        start={{ label: 'Recipe', icon: 'book-outline', background: c.tint, foreground: c.primaryText, onTrigger: () => openRecipe(dinner) }}
+        end={{ label: 'Swap', icon: 'swap-horizontal', background: c.primary, foreground: c.onPrimary, onTrigger: () => openSwap(dinner) }}
+      >
+        <DinnerRow meal={dinner} />
+      </SwipeRow>
     </Card>
   );
 }
 
-// Time, a cue that the recipe is one tap away, and a warning if the meal needs equipment the household lacks.
-function MealMeta({ meal }: { meal: PlannedMeal }) {
+// Breakfast or lunch as a compact tile: the dish, a time and calorie line, its cost, and a swap button.
+function MealTile({ meal }: { meal: PlannedMeal }) {
   const c = useTheme();
-  const { appliances } = useApp();
-  const needs = meal.appliances.filter((a) => !(appliances as string[]).includes(a));
+  const missing = useMissing(meal);
   return (
-    <>
-      <View style={styles.metaRow}>
-        <AppText variant="subhead">{meal.minutes}</AppText>
-        <AppText variant="subhead" color={c.muted}>·</AppText>
-        {meal.nutrition ? (
-          <>
-            <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{`${labelRound('kcal', meal.nutrition.kcal)} cal`}</AppText>
-            <AppText variant="subhead" color={c.muted}>·</AppText>
-          </>
-        ) : null}
-        <AppText variant="subhead" weight="600" color={c.primaryText}>Recipe</AppText>
-        <Ionicons name="chevron-forward" size={13} color={c.primaryText} />
-      </View>
-      {needs.length > 0 ? (
-        <AppText variant="footnote" weight="600" color={c.warn}>
-          {`Needs a ${needs.map((n) => applianceName(n).toLowerCase()).join(' and ')}`}
+    <View style={[styles.tile, { backgroundColor: c.bg }]}>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`${MEAL_LABELS[meal.type]}: ${meal.name}`}
+        accessibilityHint="Opens the recipe"
+        onPress={() => openRecipe(meal)}
+        style={({ pressed }) => [styles.tileBody, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        <View style={styles.label}>
+          <Ionicons name={MEAL_ICON[meal.type]} size={14} color={c.primaryText} />
+          <AppText variant="eyebrow" color={c.primaryText}>{MEAL_LABELS[meal.type]}</AppText>
+        </View>
+        <AppText variant="headline" numberOfLines={3} style={styles.tileName}>{meal.name}</AppText>
+        <AppText variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
+          {meal.nutrition ? `${meal.minutes} · ${labelRound('kcal', meal.nutrition.kcal)} cal` : meal.minutes}
         </AppText>
-      ) : null}
-    </>
+        {missing ? <AppText variant="footnote" weight="600" color={c.warn}>{missing}</AppText> : null}
+      </Pressable>
+      <View style={styles.tileFoot}>
+        <AppText variant="money" style={styles.tileCost}>{`$${meal.cost}`}</AppText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Swap ${meal.dayLong} ${MEAL_LABELS[meal.type].toLowerCase()}: ${meal.name}`}
+          hitSlop={10}
+          onPress={() => openSwap(meal)}
+          style={({ pressed }) => [styles.tileSwap, { opacity: pressed ? 0.5 : 1 }]}
+        >
+          <Ionicons name="swap-horizontal" size={18} color={c.primaryText} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// Dinner: the day's main meal, in the display face and full width.
+function DinnerRow({ meal }: { meal: PlannedMeal }) {
+  const c = useTheme();
+  const missing = useMissing(meal);
+  return (
+    <View style={styles.dinner}>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`${MEAL_LABELS[meal.type]}: ${meal.name}`}
+        accessibilityHint="Opens the recipe"
+        onPress={() => openRecipe(meal)}
+        style={({ pressed }) => [styles.dinnerText, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        <View style={styles.label}>
+          <Ionicons name={MEAL_ICON[meal.type]} size={14} color={c.primaryText} />
+          <AppText variant="eyebrow" color={c.primaryText}>{MEAL_LABELS[meal.type]}</AppText>
+        </View>
+        <AppText style={styles.dinnerName}>{meal.name}</AppText>
+        <View style={styles.metaRow}>
+          <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>
+            {meal.nutrition ? `${meal.minutes} · ${labelRound('kcal', meal.nutrition.kcal)} cal` : meal.minutes}
+          </AppText>
+          <AppText variant="subhead" color={c.muted}>·</AppText>
+          <AppText variant="subhead" weight="600" color={c.primaryText}>Recipe</AppText>
+          <Ionicons name="chevron-forward" size={13} color={c.primaryText} />
+        </View>
+        {missing ? <AppText variant="footnote" weight="600" color={c.warn}>{missing}</AppText> : null}
+      </Pressable>
+      <View style={styles.dinnerSide}>
+        <AppText variant="money" style={styles.dinnerCost}>{`$${meal.cost}`}</AppText>
+        <IconButton
+          icon="swap-horizontal"
+          label={`Swap ${meal.dayLong} ${MEAL_LABELS[meal.type].toLowerCase()}: ${meal.name}`}
+          onPress={() => openSwap(meal)}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -255,19 +307,26 @@ const styles = StyleSheet.create({
   budgetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   warning: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', padding: 12, borderRadius: radius.control },
   dayCard: { borderRadius: radius.row, overflow: 'hidden' },
-  dayNutrition: { paddingHorizontal: 14, marginTop: -4, paddingBottom: 8, fontVariant: ['tabular-nums'] },
-  dayHead: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  meal: {
-    paddingVertical: 10,
-    paddingLeft: 14,
-    paddingRight: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  dayHead: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 2 },
+  dayTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dayName: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, letterSpacing: -0.4 },
+  todayTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
+  dayCost: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  dayNutrition: { width: '100%', fontVariant: ['tabular-nums'] },
+  pair: { flexDirection: 'row', gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 },
+  tile: { flex: 1, minWidth: 0, borderRadius: radius.control, padding: 12, gap: 8, justifyContent: 'space-between' },
+  tileBody: { gap: 3, minHeight: 84 },
+  tileName: { fontSize: 16, lineHeight: 21 },
+  tileFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tileCost: { fontSize: 16 },
+  tileSwap: { width: 32, height: 28, alignItems: 'flex-end', justifyContent: 'center' },
+  label: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dinner: { paddingTop: 12, paddingBottom: 12, paddingLeft: 14, paddingRight: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dinnerText: { flex: 1, minWidth: 0, gap: 3 },
+  dinnerName: { fontFamily: fonts.displaySemi, fontSize: 21, lineHeight: 26, letterSpacing: -0.3 },
+  dinnerSide: { alignItems: 'center', gap: 6 },
+  dinnerCost: { fontSize: 20 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  mealText: { flex: 1, flexShrink: 1, minWidth: 0, minHeight: 44, justifyContent: 'center', gap: 2 },
-  cost: { minWidth: 30, textAlign: 'right' },
   centered: { alignItems: 'center', gap: 14, paddingTop: 24 },
   center: { textAlign: 'center' },
   loading: { gap: 8 },
