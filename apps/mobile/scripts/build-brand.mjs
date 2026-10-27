@@ -26,7 +26,8 @@ const PAPER = '#F7FAF5';
 const ON_GREEN = { INK, G: DEEP, TINT: '#CFE8DA', GLASS: PAPER, BLUSH: '#F4AE9C', W: '#FFFFFF' };
 const ON_PAPER = { INK, G: BRAND, TINT: '#CFE8DA', GLASS: '#E8F3EC', BLUSH: '#F4AE9C', W: '#FFFFFF' };
 const ON_DARK = { INK: '#E8F1EB', G: '#5CC99A', TINT: '#2C4A3A', GLASS: '#1F3328', BLUSH: '#C97F70', W: '#17231C' };
-const GREY = { INK: '#101010', G: '#9A9A9A', TINT: '#D6D6D6', GLASS: '#F2F2F2', BLUSH: '#C4C4C4', W: '#FFFFFF' };
+// Tinted iOS icons are greyscale on black, so Pip's lines go light and his body dark, like the dark icon.
+const GREY = { INK: '#F2F2F2', G: '#CFCFCF', TINT: '#5A5A5A', GLASS: '#262626', BLUSH: '#8A8A8A', W: '#141414' };
 const MONO = { INK: '#000000', G: '#000000', TINT: 'none', GLASS: 'none', BLUSH: 'none', W: 'none' };
 
 const paint = (art, colors) => art.replace(/__([A-Z]+)__/g, (_, k) => colors[k]);
@@ -76,6 +77,19 @@ const doodle = (name, x, y, size, rot, ink, fill, opacity) =>
 // A soft ground shadow so Pip stands on something.
 const shadow = (x, y, w, fill, opacity) => `<ellipse cx="${x}" cy="${y}" rx="${w / 2}" ry="${w / 14}" fill="${fill}" opacity="${opacity}"/>`;
 
+// A flat sunburst: alternating wedges fanning out from (cx, cy), drawn in one color at low opacity so Pip reads as bursting
+// out of the middle. Wedges run far past the canvas, which crops them.
+const rays = (cx, cy, count, fill, opacity) => {
+  const R = 4000;
+  const wedges = Array.from({ length: count }, (_, i) => {
+    const a0 = (i * 2 * Math.PI) / count;
+    const a1 = a0 + Math.PI / count;
+    const pt = (a) => `${(cx + R * Math.cos(a)).toFixed(1)} ${(cy + R * Math.sin(a)).toFixed(1)}`;
+    return `M${cx} ${cy} L${pt(a0)} L${pt(a1)} Z`;
+  });
+  return `<path d="${wedges.join(' ')}" fill="${fill}" opacity="${opacity}"/>`;
+};
+
 const out = [];
 const write = (rel, body, width) => {
   const file = join(root, rel);
@@ -94,22 +108,35 @@ const write = (rel, body, width) => {
 
 // ---- App icons
 
-// iOS masks the square itself, so the art fills edge to edge. Pip's bust is about 62% of the icon's height.
-const iconArt = (bg, colors, ground) =>
-  svg(1024, 1024, rect(1024, 1024, bg) + (ground ? shadow(512, 868, 520, ground, 0.35) : '') + place(bust(colors), 512, 500, 5.2));
+// iOS masks the square itself, so the art fills edge to edge. Pip cheers with his lid popped off, big enough that his arms
+// and the flying lid nearly touch the edges: he bursts out of a sunburst instead of sitting in a box.
+const ICON_SCALE = 5.3;
+const iconArt = (bg, colors, ground, rayFill, rayOpacity) =>
+  svg(
+    1024,
+    1024,
+    rect(1024, 1024, bg) +
+      rays(512, 560, 16, rayFill, rayOpacity) +
+      shadow(512, 902, 470, ground, 0.35) +
+      place(pose('cheer', colors), 512, 500, ICON_SCALE, 100, 98),
+  );
 
-write('assets/icon.png', iconArt(BRAND, ON_GREEN, DEEP));
+write('assets/icon.png', iconArt(BRAND, ON_GREEN, DEEP, '#FFFFFF', 0.13));
 // iOS 18 dark and tinted appearances. Tinted icons are greyscale on black; the system adds the tint.
-write('assets/ios-dark.png', iconArt('#0E1712', ON_DARK, '#000000'));
-write('assets/ios-tinted.png', svg(1024, 1024, rect(1024, 1024, '#000000') + place(bust(GREY), 512, 500, 5.2)));
-write('assets/favicon.png', svg(48, 48, rect(48, 48, BRAND) + place(bust(ON_GREEN), 24, 24, 0.3)), 48);
+write('assets/ios-dark.png', iconArt('#0E1712', ON_DARK, '#000000', '#5CC99A', 0.1));
+write(
+  'assets/ios-tinted.png',
+  svg(1024, 1024, rect(1024, 1024, '#000000') + rays(512, 560, 16, '#FFFFFF', 0.1) + place(pose('cheer', GREY), 512, 500, ICON_SCALE, 100, 98)),
+);
+write('assets/favicon.png', svg(48, 48, rect(48, 48, BRAND) + place(bust(ON_GREEN), 24, 25, 0.32)), 48);
 
-// Android crops the foreground to a circle or squircle inside its middle 66%, so Pip sits well inside that.
-const fg = (size) => svg(size, size, place(bust(ON_GREEN), size / 2, size / 2 + size * 0.01, size / 320));
+// Android crops the foreground to a circle or squircle inside its middle 66%, so Pip is scaled to sit well inside that.
+// The rays live on the background layer, which Android moves a little against Pip.
+const fg = (size) => svg(size, size, place(pose('cheer', ON_GREEN), size / 2, size / 2, size / 330, 100, 98));
 write('assets/adaptive-icon.png', fg(1024));
 write('assets/android-icon-foreground.png', fg(512));
-write('assets/android-icon-background.png', svg(512, 512, rect(512, 512, BRAND)));
-write('assets/android-icon-monochrome.png', svg(432, 432, place(bust(MONO), 216, 218, 432 / 260)));
+write('assets/android-icon-background.png', svg(512, 512, rect(512, 512, BRAND) + rays(256, 270, 16, '#FFFFFF', 0.13)));
+write('assets/android-icon-monochrome.png', svg(432, 432, place(pose('cheer', MONO), 216, 216, 432 / 330, 100, 98)));
 
 // ---- Launch screen. Expo shows this full-bleed with `contain` on the brand green.
 
@@ -119,16 +146,17 @@ write(
     1284,
     2778,
     rect(1284, 2778, BRAND) +
-      shadow(642, 1562, 440, DEEP, 0.4) +
-      place(pose('wave', ON_GREEN), 642, 1240, 3.6, 110, 107) +
-      text(642, 1770, 150, '#FFFFFF', 'Kavi', { spacing: -4 }),
+      rays(642, 1280, 20, '#FFFFFF', 0.1) +
+      shadow(642, 1790, 600, DEEP, 0.4) +
+      place(pose('cheer', ON_GREEN), 642, 1290, 5.6, 100, 98) +
+      text(642, 2120, 170, '#FFFFFF', 'Kavi', { spacing: -4 }),
   ),
 );
 
 // ---- Logo lockups: Pip beside the wordmark, for docs, the website, and press.
 
 const lockup = (colors, word) =>
-  svg(600, 280, place(bust(colors), 130, 140, 1.85) + text(270, 186, 150, word, 'Kavi', { anchor: 'start', spacing: -4 }));
+  svg(600, 280, place(pose('cheer', colors), 130, 140, 1.55, 100, 98) + text(270, 186, 150, word, 'Kavi', { anchor: 'start', spacing: -4 }));
 const lockupLight = lockup(ON_PAPER, INK);
 const lockupDark = lockup(ON_DARK, '#E8F1EB');
 write('marketing/logo.svg', lockupLight);
