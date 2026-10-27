@@ -212,6 +212,12 @@ export function monthStartUtc(now: Date = new Date()): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
+// Plus plans every week, which is four or five plans a month. The cap leaves room to regenerate a week a few times
+// and stops one account from running up AI cost. A request counts when it is made, whether or not the model succeeds.
+export const SUBSCRIBER_MONTHLY_PLAN_CAP = 25;
+
+export const reachedPlanCap = (count: number, cap: number = SUBSCRIBER_MONTHLY_PLAN_CAP): boolean => count >= cap;
+
 export function hasActiveSubscription(rows: { status: string; period_end: string | null }[], now: Date = new Date()): boolean {
   return rows.some((r) => ["active", "trialing"].includes(r.status) && (!r.period_end || new Date(r.period_end) > now));
 }

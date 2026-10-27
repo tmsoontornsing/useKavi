@@ -8,6 +8,7 @@ import {
   minCandidates,
   monthStartUtc,
   planTotal,
+  reachedPlanCap,
   selectCandidates,
   validateWeek,
 } from "../_shared/plan-logic.ts";
@@ -45,10 +46,22 @@ Deno.serve(async (req) => {
   }
   if (!profile) return json({ error: "profile_missing", message: "Finish setting up your household first" }, 409);
 
-  // Free plan: one plan per calendar month. Paid plan: unlimited.
+  // Free plan: one plan per calendar month. Paid plan: a monthly cap on plan requests, counted in plan_generations
+  // because regenerating a week replaces its meal_plans row.
   const { data: subs, error: subsError } = await db.from("subscriptions").select("status, period_end").eq("user_id", userId);
   if (subsError) return fail("generate-plan", "subscription_read_failed", subsError.message);
-  if (!hasActiveSubscription(subs ?? [])) {
+  if (hasActiveSubscription(subs ?? [])) {
+    const { count, error } = await db
+      .from("plan_generations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", monthStartUtc());
+    // The cap protects AI spend, so a failed count lets the plan through rather than locking a paying user out.
+    if (error) console.error(`generate-plan: plan cap count failed: ${error.message}`);
+    else if (reachedPlanCap(count ?? 0)) {
+      return json({ error: "plan_cap", message: "You’ve reached this month’s plan limit. It resets on the 1st." }, 429);
+    }
+  } else {
     const { count, error } = await db
       .from("meal_plans")
       .select("id", { count: "exact", head: true })
@@ -81,6 +94,10 @@ Deno.serve(async (req) => {
     likes: profile.likes,
     candidates,
   };
+
+  // Count the request before the model runs: a failed attempt still costs money.
+  const { error: logError } = await db.from("plan_generations").insert({ user_id: userId });
+  if (logError) console.error(`generate-plan: could not record the request: ${logError.message}`);
 
   // A model can return a malformed or repetitive week: allow it one retry, then fall back to the
   // built-in planner so the household always gets a plan.

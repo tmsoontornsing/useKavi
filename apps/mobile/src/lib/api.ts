@@ -375,6 +375,8 @@ const serverError = (code: unknown, message: unknown): string => {
   switch (code) {
     case 'plan_limit':
       return t('The free plan includes one plan a month.');
+    case 'plan_cap':
+      return t('You’ve reached this month’s plan limit. It resets on the 1st.');
     case 'profile_missing':
       return t('Finish setting up your household first');
     case 'not_enough_recipes':

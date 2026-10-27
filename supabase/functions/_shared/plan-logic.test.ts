@@ -11,8 +11,10 @@ import {
   minCandidates,
   monthStartUtc,
   planTotal,
+  reachedPlanCap,
   selectCandidates,
   shuffle,
+  SUBSCRIBER_MONTHLY_PLAN_CAP,
   validateWeek,
   violatesAllergy,
   type PlanProfile,
@@ -284,4 +286,12 @@ Deno.test("likes: never override an allergy or a diet", () => {
   ];
   const out = selectCandidates(recipes, profile({ allergies: ["Peanuts"], diet: "vegan", likes: ["Noodles"] }), { rng: () => 0 }).dinner;
   assertEquals(out.map((c) => c.id), ["ok"]);
+});
+
+Deno.test("reachedPlanCap stops a subscriber at the monthly cap", () => {
+  assertEquals(reachedPlanCap(0), false);
+  assertEquals(reachedPlanCap(SUBSCRIBER_MONTHLY_PLAN_CAP - 1), false);
+  assertEquals(reachedPlanCap(SUBSCRIBER_MONTHLY_PLAN_CAP), true);
+  assertEquals(reachedPlanCap(SUBSCRIBER_MONTHLY_PLAN_CAP + 5), true);
+  assertEquals(reachedPlanCap(3, 3), true);
 });

@@ -397,5 +397,6 @@
   "Hindi": "ฮินดี",
   "French": "ฝรั่งเศส",
   "Portuguese": "โปรตุเกส",
-  "Thai": "ไทย"
+  "Thai": "ไทย",
+  "You’ve reached this month’s plan limit. It resets on the 1st.": "คุณใช้ครบจำนวนแผนของเดือนนี้แล้ว ระบบจะรีเซ็ตในวันที่ 1"
 }
