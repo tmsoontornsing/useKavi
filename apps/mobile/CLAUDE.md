@@ -13,3 +13,7 @@ Each recipe's calories, protein, carbs, fiber, sugars, fat, saturated fat, chole
 ## Legal
 
 The Terms of Service and Privacy Policy live in `src/legal/documents.ts`, with business details in `src/legal/config.ts`. The app shows them at `/legal/terms` and `/legal/privacy`; `node scripts/build-legal.mjs` writes the same text to `legal/*.md` for the website. When Kavi starts collecting new data or uses a new service, update the Privacy Policy and the store privacy forms in the same change. `docs/legal-checklist.md` lists what must happen before release. Never describe allergen filtering, prices, or nutrition as guaranteed in UI copy.
+
+## Reminders
+
+The grocery list's checkbox button sends unchecked items to a "Kavi Groceries" list in Apple Reminders (`src/lib/reminders.ts`, using `expo-calendar/legacy`). iOS only; the button is hidden elsewhere. Kavi creates and reads only that list, and skips items already waiting in it, so sending twice does not duplicate. The permission text lives in the `expo-calendar` plugin entry in `app.json` and takes effect in the next native build; Expo Go shows its own wording.

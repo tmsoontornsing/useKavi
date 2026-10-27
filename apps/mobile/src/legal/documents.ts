@@ -172,6 +172,7 @@ export const PRIVACY: LegalDoc = {
         'Your lists. Pantry items, meal plans, meals you swap, grocery lists and what you check off, and steps you mark done.',
         'Household members. The people you invite to share your grocery list, and their accounts.',
         'Preferences. Settings such as reminder and notification choices.',
+        'Reminders (only if you choose "Add list to Reminders" on iPhone). Kavi asks for permission to use Reminders, then adds your grocery items to a list named Kavi Groceries. Kavi reads only that list, to avoid adding an item twice, and never reads your other reminders. Those reminders live on your device and in your Apple account, under Apple\'s privacy practices; they are not sent to us. You can turn the permission off in iPhone Settings.',
         'Support. What you send us when you contact us.',
       ],
     },

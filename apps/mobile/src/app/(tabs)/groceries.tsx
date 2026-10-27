@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Easing, Image, Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton } from '../../components/Buttons';
@@ -10,6 +10,7 @@ import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
 import { animateLayout, haptic, PressableScale, reduceMotion, Reveal, useCountUp } from '../../motion';
+import { remindersAvailable, sendToReminders } from '../../lib/reminders';
 import { share as shareText } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { radius, useTheme } from '../../theme';
@@ -46,6 +47,41 @@ export default function Groceries() {
   const shelf = pantry.flatMap((s) => s.items).map((i) => i.toLowerCase());
   const shelfText = shelf.length <= 3 ? shelf.join(', ') : `${shelf.slice(0, 3).join(', ')}, and more`;
 
+  // Puts the unchecked items into the Kavi Groceries list in Apple Reminders.
+  const [sending, setSending] = useState(false);
+  const toReminders = async () => {
+    if (sending) return;
+    setSending(true);
+    try {
+      const r = await sendToReminders(groceries, checked);
+      if (r.status === 'denied') {
+        Alert.alert(
+          'Kavi can’t reach Reminders',
+          r.canAskAgain
+            ? 'Allow Reminders access to send your list there.'
+            : 'Turn on Reminders for Kavi in Settings, then try again.',
+          r.canAskAgain
+            ? [{ text: 'OK' }]
+            : [{ text: 'Not Now', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings() }],
+        );
+      } else if (r.status === 'nothing') {
+        Alert.alert('Nothing to send', 'Every item on your list is already in your cart.');
+      } else {
+        haptic.success();
+        Alert.alert(
+          r.added > 0 ? `Added ${r.added} ${r.added === 1 ? 'item' : 'items'} to Reminders` : 'Already in Reminders',
+          (r.added > 0 ? 'They are in a list called Kavi Groceries.' : 'Everything on your list is in Kavi Groceries.') +
+            (r.added > 0 && r.alreadyThere > 0 ? ` ${r.alreadyThere} were already there.` : ''),
+          [{ text: 'Done', style: 'cancel' }, { text: 'Open Reminders', onPress: () => Linking.openURL('x-apple-reminderkit://').catch(() => {}) }],
+        );
+      }
+    } catch (e) {
+      Alert.alert('Couldn’t add to Reminders', (e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  };
+
   const share = () => {
     const text = groceries.map(
       (a) => `${a.name}\n${a.items.map((i) => `${checked[i.key] ? '✓' : '•'} ${i.name}`).join('\n')}`,
@@ -58,6 +94,9 @@ export default function Groceries() {
     <>
       <View style={styles.headRow}>
         <AppText variant="largeTitle" accessibilityRole="header" style={styles.flex}>Grocery List</AppText>
+        {remindersAvailable ? (
+          <IconButton icon="checkbox-outline" label="Add list to Reminders" onPress={toReminders} />
+        ) : null}
         <IconButton icon="share-outline" label="Share list with your household" onPress={share} />
       </View>
       <View style={[styles.summary, { backgroundColor: c.card }]}>

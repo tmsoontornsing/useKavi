@@ -23,7 +23,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,6 +40,13 @@
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
           "backgroundColor": "#3DAA84"
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": false,
+          "remindersPermission": "Kavi adds your grocery list to a Reminders list so you can check items off while you shop. Kavi only adds items to its own list."
         }
       ],
       "expo-font",
