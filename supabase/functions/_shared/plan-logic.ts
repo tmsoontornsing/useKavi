@@ -33,7 +33,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 // Word list per allergen, matched against recipe titles and ingredient names. This is a safety net
 // that errs toward excluding. The reliable signal is an explicit `contains-<allergen>` tag on the
 // recipe, which is always honoured. Edit these lists as the catalog grows.
-const ALLERGEN_WORDS: Record<string, string[]> = {
+export const ALLERGEN_WORDS: Record<string, string[]> = {
   "peanuts": ["peanut"],
   "tree-nuts": ["almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut", "macadamia", "pine nut"],
   "shellfish": ["shrimp", "prawn", "crab", "lobster", "clam", "mussel", "oyster", "scallop", "crawfish"],

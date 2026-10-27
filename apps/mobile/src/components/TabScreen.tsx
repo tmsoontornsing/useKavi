@@ -19,6 +19,7 @@ export function TabScreen({ tab, header, children }: { tab: TabName; header: Rea
           style={styles.flex}
           contentContainerStyle={styles.content}
           contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
         >
           {children}
         </ScrollView>
