@@ -51,7 +51,7 @@ export default function Settings() {
       <Pressable
         accessibilityRole={app.subscribed ? 'summary' : 'button'}
         disabled={app.subscribed}
-        onPress={() => router.push('/paywall')}
+        onPress={() => router.push('/plus')}
         style={({ pressed }) => [styles.planCard, { backgroundColor: c.card, opacity: pressed ? 0.7 : 1 }]}
       >
         <Mascot pose={app.subscribed ? 'cheer' : 'sleep'} size={64} decorative style={styles.planPip} />

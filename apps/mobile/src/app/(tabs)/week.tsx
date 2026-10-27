@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
-import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
+import { Card, IconButton, PrimaryButton, TextButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
@@ -46,6 +46,7 @@ export default function Week() {
           </AppText>
           <PrimaryButton label="Plan This Week" onPress={app.generatePlan} />
           <AppText variant="footnote">Free plan: 1 of 1 plans left this month</AppText>
+          <TextButton label="See What Plus Adds" onPress={() => router.push('/plus')} />
         </View></Reveal>
       ) : null}
       {app.planStatus === 'error' ? (
@@ -56,6 +57,9 @@ export default function Week() {
             {app.planError ?? 'Kavi can’t reach the internet. Check your connection and try again.'} Your household settings are saved.
           </AppText>
           <PrimaryButton label="Try Again" onPress={app.generatePlan} />
+          {app.planError?.toLowerCase().includes('free plan') ? (
+            <TextButton label="See What Plus Adds" onPress={() => router.push('/plus')} />
+          ) : null}
         </View></Reveal>
       ) : null}
       {ready && app.plan.length === 21

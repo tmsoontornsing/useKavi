@@ -32,6 +32,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
         <Stack.Screen name="recipe/[id]" />
         <Stack.Screen name="swap/[slot]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="plus" />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
       </Stack>
     </AppStateProvider>
