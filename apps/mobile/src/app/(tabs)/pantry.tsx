@@ -4,6 +4,7 @@ import { Image, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { IconButton, TextButton } from '../../components/Buttons';
+import { Mascot } from '../../components/Mascot';
 import { TabScreen } from '../../components/TabScreen';
 import { animateLayout, haptic, PressableScale, Reveal, Wiggle } from '../../motion';
 import { useApp } from '../../state/AppState';
@@ -61,6 +62,16 @@ export default function Pantry() {
 
   return (
     <TabScreen tab="pantry" header={header}>
+      {count === 0 && !adding ? (
+        <View style={styles.empty}>
+          <Mascot pose="peek" size={120} decorative />
+          <AppText variant="headline">Your pantry is empty</AppText>
+          <AppText variant="subhead" style={styles.center}>
+            Add what you already have, like rice or olive oil, and Kavi leaves it off your grocery list.
+          </AppText>
+          <TextButton label="Add an Item" onPress={() => setAdding(true)} />
+        </View>
+      ) : null}
       {pantry.map((shelf) => (
         <View key={shelf.name} style={styles.shelfGroup}>
           <AppText variant="eyebrow" accessibilityRole="header">{shelf.name}</AppText>
@@ -110,6 +121,8 @@ export default function Pantry() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  empty: { alignItems: 'center', gap: 4, paddingVertical: 8 },
+  center: { textAlign: 'center' },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   input: { minHeight: 44, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17 },
   shelfGroup: { gap: 6, marginBottom: 12 },

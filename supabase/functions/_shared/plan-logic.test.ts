@@ -5,6 +5,7 @@ import {
   defaultWeekStart,
   hasActiveSubscription,
   hasEquipment,
+  isLiked,
   isMonday,
   matchesDiet,
   minCandidates,
@@ -36,6 +37,7 @@ const profile = (over: Partial<PlanProfile> = {}): PlanProfile => ({
   diet: "any",
   allergies: [],
   dislikes: [],
+  likes: [],
   appliances: [],
   ...over,
 });
@@ -251,4 +253,35 @@ Deno.test("hasActiveSubscription needs an active or trialing row that has not en
   assertEquals(hasActiveSubscription([{ status: "trialing", period_end: "2026-11-01T00:00:00Z" }], now), true);
   assertEquals(hasActiveSubscription([{ status: "active", period_end: "2026-10-01T00:00:00Z" }], now), false);
   assertEquals(hasActiveSubscription([{ status: "canceled", period_end: null }], now), false);
+});
+
+Deno.test("likes: liked recipes are offered first and flagged, even when the list is trimmed", () => {
+  const recipes = [
+    recipe({ id: "a" }),
+    recipe({ id: "b" }),
+    recipe({ id: "c", title: "Chickpea curry" }),
+    recipe({ id: "d" }),
+  ];
+  const out = selectCandidates(recipes, profile({ likes: ["Curry"] }), { limit: 2, rng: () => 0 }).dinner;
+  assertEquals(out.length, 2);
+  assertEquals(out[0].id, "c");
+  assertEquals(out[0].liked, true);
+  assertEquals(out[1].liked, false);
+});
+
+Deno.test("likes: a food name also matches its usual dishes, and typed-in foods match their own words", () => {
+  assert(isLiked(recipe({ id: "p", title: "Baked penne" }), ["Pasta"]));
+  assert(isLiked(recipe({ id: "t", title: "Shrimp pad thai" }), ["Pad thai"]));
+  assert(isLiked(recipe({ id: "f", title: "Veggie fried rice" }), ["Stir-fry"]));
+  assertEquals(isLiked(recipe({ id: "o", title: "Olive oil cake" }), ["Olives"]), false);
+});
+
+Deno.test("likes: never override an allergy or a diet", () => {
+  const recipes = [
+    recipe({ id: "nuts", title: "Peanut noodles", tags: ["dinner", "vegan"] }),
+    recipe({ id: "ok", title: "Plain rice", tags: ["dinner", "vegan"] }),
+    recipe({ id: "meat", title: "Beef noodles", tags: ["dinner"] }),
+  ];
+  const out = selectCandidates(recipes, profile({ allergies: ["Peanuts"], diet: "vegan", likes: ["Noodles"] }), { rng: () => 0 }).dinner;
+  assertEquals(out.map((c) => c.id), ["ok"]);
 });

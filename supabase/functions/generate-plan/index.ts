@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
     weeklyBudgetUsd: profile.weekly_budget_usd,
     allergies: profile.allergies,
     dislikes: profile.dislikes,
+    likes: profile.likes,
     candidates,
   };
 

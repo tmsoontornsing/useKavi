@@ -21,6 +21,8 @@ export type PlanProfile = {
   diet: string | null;
   allergies: string[];
   dislikes: string[];
+  // Foods the household likes, as free text. Recipes that match are offered first.
+  likes: string[];
   // Equipment ids the household has, e.g. "oven". Empty means not specified, so nothing is filtered.
   appliances: string[];
 };
@@ -77,6 +79,28 @@ function dislikes(r: RecipeRecord, label: string): boolean {
   return wordRegex(DISLIKE_WORDS[s] ?? [label.trim()]).test(haystack(r));
 }
 
+// Words that show a recipe is the kind of thing a liked food names, when the name alone would miss it.
+// Anything not listed is matched on its own words, so a typed-in "pad thai" still works.
+const LIKE_WORDS: Record<string, string[]> = {
+  "pasta": ["pasta", "spaghetti", "penne", "linguine", "fettuccine", "macaroni", "orzo", "lasagna", "ravioli"],
+  "tacos": ["taco", "fajita"],
+  "curry": ["curry", "masala", "korma"],
+  "stir-fry": ["stir-fry", "stir fry", "fried rice", "lo mein"],
+  "soup": ["soup", "stew", "chili", "chowder"],
+  "salads": ["salad"],
+  "rice-bowls": ["rice bowl", "grain bowl", "burrito bowl", "poke"],
+  "roasted-veggies": ["roasted vegetable", "roasted veg", "roasted veggie", "sheet-pan vegetable"],
+};
+
+export function likesRecipe(r: RecipeRecord, label: string): boolean {
+  const s = slug(label);
+  if (!s) return false;
+  if ([s, `contains-${s}`].some((t) => r.tags.includes(t))) return true;
+  return wordRegex(LIKE_WORDS[s] ?? [label.trim()]).test(haystack(r));
+}
+
+export const isLiked = (r: RecipeRecord, likes: string[]) => likes.some((l) => likesRecipe(r, l));
+
 // Which recipe tags satisfy each diet. Strict diets need an explicit tag, so an untagged recipe
 // is never offered to a vegan. Unknown or missing diets apply no filter.
 const DIET_TAGS: Record<string, string[]> = {
@@ -113,7 +137,9 @@ export const minCandidates = (type: MealType) => Math.ceil(7 / MAX_USES[type]);
 // Recipes the model may choose from, for each meal. A recipe is offered for a meal when it carries that
 // meal's tag (`breakfast`, `lunch`, `dinner`), so one recipe can serve more than one meal. Allergies,
 // diet and equipment are hard filters. Dislikes are applied only while enough variety remains, so a
-// small catalog never starves the plan.
+// small catalog never starves the plan. Recipes that match a liked food come first, so they make the cut when
+// the list is trimmed and the model sees them flagged.
+
 export function selectCandidates(
   recipes: RecipeRecord[],
   profile: PlanProfile,
@@ -131,15 +157,17 @@ export function selectCandidates(
     const liked = ofType.filter((r) => !profile.dislikes.some((d) => dislikes(r, d)));
     // Keep two weeks' worth of variety before letting dislikes thin the list.
     const pool = liked.length >= minCandidates(type) * 2 ? liked : ofType;
-    return shuffle(pool, rng)
-      .slice(0, limit)
-      .map((r) => ({
-        id: r.id,
-        title: r.title,
-        minutes: r.minutes,
-        // Scale the recipe from its own servings to this household.
-        estimatedCostUsd: round2((r.baseCostUsd * profile.household_size) / r.servings),
-      }));
+    const marked = shuffle(pool, rng).map((r) => ({ r, liked: isLiked(r, profile.likes) }));
+    // Stable, so the shuffle still decides the order within the liked and the rest.
+    const ranked = [...marked.filter((m) => m.liked), ...marked.filter((m) => !m.liked)];
+    return ranked.slice(0, limit).map(({ r, liked }) => ({
+      id: r.id,
+      title: r.title,
+      minutes: r.minutes,
+      // Scale the recipe from its own servings to this household.
+      estimatedCostUsd: round2((r.baseCostUsd * profile.household_size) / r.servings),
+      liked,
+    }));
   };
   return { breakfast: forMeal("breakfast"), lunch: forMeal("lunch"), dinner: forMeal("dinner") };
 }

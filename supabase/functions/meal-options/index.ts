@@ -7,7 +7,7 @@ import { MEAL_TYPES, type MealType } from "../_shared/provider.ts";
 // Authorization: Bearer <the signed-in user's access token>
 //
 // Recipes the caller could swap in for a meal: the same allergy, diet, equipment and dislike filters the
-// planner uses, cheapest first. `exclude` drops recipe ids, such as the one being replaced.
+// planner uses, liked foods first and then cheapest. `exclude` drops recipe ids, such as the one being replaced.
 
 const LIMIT = 6;
 
@@ -29,7 +29,8 @@ Deno.serve(async (req) => {
     if (!profile) return json({ error: "profile_missing", message: "Finish setting up your household first" }, 409);
     const options = selectCandidates(await loadRecipes(db), profile, { limit: 1000 })
       [mealType].filter((c) => !exclude.has(c.id))
-      .sort((a, b) => a.estimatedCostUsd - b.estimatedCostUsd)
+      // Liked foods first, then cheapest.
+      .sort((a, b) => Number(!!b.liked) - Number(!!a.liked) || a.estimatedCostUsd - b.estimatedCostUsd)
       .slice(0, LIMIT)
       .map((c) => ({ id: c.id, title: c.title, minutes: c.minutes, estimated_cost_usd: c.estimatedCostUsd }));
     return json({ meal_type: mealType, options });

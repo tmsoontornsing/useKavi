@@ -38,6 +38,7 @@ type AppState = {
   diet: DietId;
   allergies: string[];
   dislikes: string[];
+  likes: string[];
   appliances: ApplianceId[];
   remindSunday: boolean;
   notifyListChanges: boolean;
@@ -60,6 +61,8 @@ type Actions = {
   setDiet: (d: DietId) => void;
   toggleAllergy: (a: string) => void;
   toggleDislike: (d: string) => void;
+  toggleLike: (food: string) => void;
+  addLike: (food: string) => void;
   toggleAppliance: (id: ApplianceId) => void;
   setRemindSunday: (on: boolean) => void;
   setNotifyListChanges: (on: boolean) => void;
@@ -108,6 +111,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [diet, setDiet] = useState<DietId>('any');
   const [allergies, setAllergies] = useState<string[]>(['Peanuts', 'Shellfish']);
   const [dislikes, setDislikes] = useState<string[]>(['Mushrooms']);
+  const [likes, setLikes] = useState<string[]>([]);
   // Most kitchens have these three, so they start ticked and the user unticks what they lack.
   const [appliances, setAppliances] = useState<ApplianceId[]>(['stovetop', 'oven', 'microwave']);
   const [remindSunday, setRemindSunday] = useState(true);
@@ -134,7 +138,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const userId = session?.user.id ?? null;
-  const profile: api.Profile = { people, budget, diet, allergies, dislikes, appliances };
+  const profile: api.Profile = { people, budget, diet, allergies, dislikes, likes, appliances };
+
   // Latest values for async work started earlier, so it never acts on stale state.
   const latest = useRef({ profile, pantry, planId });
   latest.current = { profile, pantry, planId };
@@ -207,13 +212,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const server = await api.loadProfile(userId);
         let current = local;
         if (server?.saved) {
-          current = { people: server.people, budget: server.budget, diet: server.diet, allergies: server.allergies, dislikes: server.dislikes, appliances: server.appliances };
+          current = { people: server.people, budget: server.budget, diet: server.diet, allergies: server.allergies, dislikes: server.dislikes, likes: server.likes, appliances: server.appliances };
           if (cancelled) return;
           setPeopleRaw(current.people);
           setBudgetRaw(current.budget);
           setDiet(current.diet);
           setAllergies(current.allergies);
           setDislikes(current.dislikes);
+          setLikes(current.likes);
           setAppliances(current.appliances);
         } else {
           await api.saveProfile(userId, local);
@@ -256,7 +262,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
     }, 700);
     return () => clearTimeout(timer);
-  }, [userId, people, budget, diet, allergies, dislikes, appliances]);
+  }, [userId, people, budget, diet, allergies, dislikes, likes, appliances]);
 
   // Pantry changes move items on and off the grocery list.
   const refreshListAfterPantryChange = async () => {
@@ -294,6 +300,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     diet,
     allergies,
     dislikes,
+    likes,
     appliances,
     remindSunday,
     notifyListChanges,
@@ -313,6 +320,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setDiet,
     toggleAllergy: (a: string) => setAllergies((l) => toggle(l, a)),
     toggleDislike: (d: string) => setDislikes((l) => toggle(l, d)),
+    toggleLike: (food: string) => setLikes((l) => toggle(l, food)),
+    addLike: (food: string) => {
+      const name = food.trim().replace(/^./, (ch) => ch.toUpperCase());
+      if (!name) return;
+      setLikes((l) => (l.some((x) => x.toLowerCase() === name.toLowerCase()) ? l : [...l, name]));
+    },
     toggleAppliance: (id: ApplianceId) =>
       setAppliances((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id])),
     setRemindSunday,

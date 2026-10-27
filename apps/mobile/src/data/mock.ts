@@ -709,6 +709,7 @@ export type DietId = (typeof DIETS)[number]['id'];
 
 export const ALLERGIES = ['Peanuts', 'Tree nuts', 'Shellfish', 'Dairy', 'Gluten', 'Eggs', 'Soy'];
 export const DISLIKES = ['Mushrooms', 'Olives', 'Eggplant', 'Spicy food', 'Tofu', 'Fish'];
+export const LIKES = ['Pasta', 'Tacos', 'Curry', 'Stir-fry', 'Soup', 'Pizza', 'Salmon', 'Chicken', 'Rice bowls', 'Salads', 'Avocado', 'Roasted veggies'];
 
 export const PLANS = [
   { id: 'annual', name: 'Annual', price: 59, per: 'year', billed: 'Billed yearly, about $4.92 a month', badge: 'Save 38%', best: true },

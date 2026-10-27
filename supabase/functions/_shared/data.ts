@@ -7,7 +7,7 @@ import type { PlanProfile, RecipeRecord } from "./plan-logic.ts";
 export async function loadProfile(db: SupabaseClient, userId: string): Promise<PlanProfile | null> {
   const { data, error } = await db
     .from("profiles")
-    .select("household_size, weekly_budget_usd, diet, allergies, dislikes, appliances")
+    .select("household_size, weekly_budget_usd, diet, allergies, dislikes, likes, appliances")
     .eq("id", userId)
     .maybeSingle();
   if (error) throw new Error(`profile read failed: ${error.message}`);

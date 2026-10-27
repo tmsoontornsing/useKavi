@@ -21,6 +21,9 @@ export default function Settings() {
   const kitchenSummary =
     kitchen.length === 0 ? 'None' : kitchen.length <= 2 ? kitchen.join(', ') : `${kitchen.slice(0, 2).join(', ')} +${kitchen.length - 2}`;
 
+  const likesSummary =
+    app.likes.length === 0 ? 'None yet' : app.likes.length <= 2 ? app.likes.join(', ') : `${app.likes.slice(0, 2).join(', ')} +${app.likes.length - 2}`;
+
   const confirmDelete = () =>
     Alert.alert(
       'Delete your account?',
@@ -68,6 +71,7 @@ export default function Settings() {
         <LinkRow label="Diet" value={dietName} href="/onboarding/diet?edit=1" />
         <LinkRow label="Allergies" value={app.allergies.join(', ') || 'None'} href="/onboarding/household?edit=1" />
         <LinkRow label="Dislikes" value={app.dislikes.join(', ') || 'None'} href="/onboarding/household?edit=1" />
+        <LinkRow label="Foods you like" value={likesSummary} href="/onboarding/household?edit=1" />
         <LinkRow label="Kitchen" value={kitchenSummary} href="/onboarding/kitchen?edit=1" />
       </Section>
 

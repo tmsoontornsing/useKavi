@@ -5,6 +5,7 @@ import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
 import { AppText } from '../../components/AppText';
 import { Card, IconButton } from '../../components/Buttons';
 import { CheckCircle, ProgressBar } from '../../components/Controls';
+import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
@@ -89,7 +90,11 @@ export default function Groceries() {
 
       {all.length === 0 ? (
         <Card style={styles.emptyList}>
-          <AppText color={c.muted}>Your list fills in when you plan a week. Items already on your pantry shelf are left off.</AppText>
+          <Mascot pose="peek" size={120} decorative />
+          <AppText variant="headline">Your list is empty</AppText>
+          <AppText color={c.muted} style={styles.centerText}>
+            It fills in when you plan a week. Items already on your pantry shelf are left off.
+          </AppText>
         </Card>
       ) : null}
 
@@ -179,7 +184,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   done: { textDecorationLine: 'line-through' },
-  emptyList: { padding: 16 },
+  emptyList: { padding: 16, alignItems: 'center', gap: 4 },
+  centerText: { textAlign: 'center' },
   cartBar: { marginTop: 8 },
   summary: {
     borderRadius: radius.row,

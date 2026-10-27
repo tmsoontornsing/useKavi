@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
+import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
@@ -37,7 +38,7 @@ export default function Week() {
       {app.planStatus === 'loading' ? <LoadingState /> : null}
       {app.planStatus === 'empty' ? (
         <Reveal><View style={styles.centered}>
-          <Image source={require('../../../assets/shelves/shelf1.png')} style={styles.shelf} resizeMode="contain" />
+          <Mascot pose="sleep" size={150} decorative />
           <AppText variant="title" style={styles.center} accessibilityRole="header">No meals planned yet</AppText>
           <AppText color={c.muted} style={styles.center}>
             Kavi will plan breakfast, lunch, and dinner for {app.people} people that fit your ${app.budget} budget.
@@ -48,9 +49,7 @@ export default function Week() {
       ) : null}
       {app.planStatus === 'error' ? (
         <Reveal><View style={styles.centered} accessibilityRole="alert">
-          <View style={[styles.errorIcon, { backgroundColor: c.warnBg }]}>
-            <Ionicons name="cloud-offline-outline" size={26} color={c.warn} />
-          </View>
+          <Mascot pose="oops" size={150} decorative />
           <AppText variant="title" style={styles.center} accessibilityRole="header">Couldn’t build your plan</AppText>
           <AppText color={c.muted} style={styles.center}>
             {app.planError ?? 'Kavi can’t reach the internet. Check your connection and try again.'} Your household settings are saved.
@@ -149,6 +148,13 @@ function BudgetCard({ over }: { over: boolean }) {
   const { planTotal, budget } = useApp();
   const left = budget - planTotal;
   const shownTotal = Math.round(useCountUp(planTotal));
+  // Pip celebrates when the week comes in under budget, then settles so it does not bounce all week.
+  const [celebrating, setCelebrating] = useState(true);
+  useEffect(() => {
+    setCelebrating(true);
+    const id = setTimeout(() => setCelebrating(false), 4000);
+    return () => clearTimeout(id);
+  }, [planTotal, budget]);
   return (
     <Card style={styles.budget}>
       <View style={styles.budgetHead}>
@@ -172,7 +178,10 @@ function BudgetCard({ over }: { over: boolean }) {
           </AppText>
         </View>
       ) : (
-        <AppText variant="subhead" color={c.primaryText} weight="500">${left} left this week</AppText>
+        <View style={styles.underRow}>
+          <AppText variant="subhead" color={c.primaryText} weight="500" style={styles.flex}>${left} left this week</AppText>
+          <Mascot pose="cheer" size={64} animate={celebrating} decorative style={styles.cheer} />
+        </View>
       )}
     </Card>
   );
@@ -203,7 +212,10 @@ function LoadingState() {
 
   return (
     <View accessibilityRole="progressbar" accessibilityLabel="Building your plan" style={styles.loading}>
-      <AppText variant="subhead">Building your plan from 300 recipes…</AppText>
+      <View style={styles.cooking}>
+        <Mascot pose="cook" size={130} decorative />
+        <AppText variant="subhead" style={styles.center}>Pip is building your plan from 300 recipes…</AppText>
+      </View>
       {['70%', '55%', '80%', '62%', '74%', '58%'].map((w) => (
         <Animated.View key={w} style={[styles.skeleton, { backgroundColor: c.card, opacity: pulse }]}>
           <View style={[styles.bar, { width: 30, height: 12, backgroundColor: c.track }]} />
@@ -239,9 +251,10 @@ const styles = StyleSheet.create({
   cost: { minWidth: 30, textAlign: 'right' },
   centered: { alignItems: 'center', gap: 14, paddingTop: 24 },
   center: { textAlign: 'center' },
-  shelf: { width: '100%', height: 40 },
-  errorIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   loading: { gap: 8 },
+  cooking: { alignItems: 'center', gap: 4, paddingBottom: 8 },
+  underRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: -14 },
+  cheer: { marginRight: -8 },
   skeleton: { height: 64, borderRadius: radius.row, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
   bar: { borderRadius: 6 },
 });

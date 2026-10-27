@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../components/AppText';
 import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
+import { Mascot } from '../../components/Mascot';
 import { MEAL_LABELS, type Meal } from '../../data/mock';
 import { haptic, PressableScale } from '../../motion';
 import { modalEdges } from '../../navigation';
@@ -91,8 +92,9 @@ export default function Swap() {
             </View>
           ) : null}
           {options?.length === 0 ? (
-            <Card style={styles.none}>
-              <AppText color={c.muted}>{`No other ${typeLabel.toLowerCase()} options fit your household and kitchen.`}</AppText>
+            <Card style={[styles.none, styles.noneCentered]}>
+              <Mascot pose="think" size={110} decorative />
+              <AppText color={c.muted} style={styles.centerText}>{`No other ${typeLabel.toLowerCase()} options fit your household and kitchen.`}</AppText>
               <TextButton label="Update Kitchen" onPress={() => router.push('/onboarding/kitchen?edit=1')} />
             </Card>
           ) : null}
@@ -150,6 +152,8 @@ export default function Swap() {
 }
 
 const styles = StyleSheet.create({
+  noneCentered: { alignItems: 'center' },
+  centerText: { textAlign: 'center' },
   root: { flex: 1 },
   flex: { flex: 1, gap: 2 },
   nav: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 8 },

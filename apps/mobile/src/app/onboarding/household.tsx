@@ -8,7 +8,7 @@ import { Card, IconButton, PrimaryButton } from '../../components/Buttons';
 import { Chip } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { goToStep } from '../../components/StepHeader';
-import { ALLERGIES, DISLIKES } from '../../data/mock';
+import { ALLERGIES, DISLIKES, LIKES } from '../../data/mock';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, useTheme } from '../../theme';
 
@@ -29,6 +29,13 @@ export default function Household() {
     const n = Math.min(400, Math.max(50, Number(draft) || app.budget));
     app.setBudget(n);
     setDraft(String(n));
+  };
+  // Foods they like: the suggestions, plus anything they have typed in.
+  const [food, setFood] = useState('');
+  const likeChips = [...LIKES, ...app.likes.filter((l) => !LIKES.some((x) => x.toLowerCase() === l.toLowerCase()))];
+  const addFood = () => {
+    app.addLike(food);
+    setFood('');
   };
   // Leaving through a tab or Back unmounts this screen with the keyboard possibly still open, so keep what was typed.
   const latest = useRef({ draft, budget: app.budget, setBudget: app.setBudget });
@@ -132,6 +139,26 @@ export default function Household() {
           ))}
         </View>
       </View>
+
+      <View style={styles.group}>
+        <AppText variant="eyebrow" accessibilityRole="header">Foods you like</AppText>
+        <View style={styles.chips}>
+          {likeChips.map((f) => (
+            <Chip key={f} label={f} selected={app.likes.includes(f)} onPress={() => app.toggleLike(f)} />
+          ))}
+        </View>
+        <TextInput
+          accessibilityLabel="Add another food you like"
+          placeholder="Add another, like pad thai"
+          placeholderTextColor={c.muted}
+          value={food}
+          onChangeText={setFood}
+          onSubmitEditing={addFood}
+          returnKeyType="done"
+          autoCapitalize="sentences"
+          style={[styles.foodInput, { backgroundColor: c.card, color: c.text, borderColor: c.control }]}
+        />
+      </View>
     </OnboardingShell>
   );
 }
@@ -157,4 +184,5 @@ const styles = StyleSheet.create({
   scale: { flexDirection: 'row', justifyContent: 'space-between' },
   group: { gap: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  foodInput: { minHeight: 44, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17 },
 });

@@ -23,13 +23,14 @@ export const PlanSchema = z.object({
 
 export type Plan = z.infer<typeof PlanSchema>;
 
-export type Candidate = { id: string; title: string; minutes: number; estimatedCostUsd: number };
+export type Candidate = { id: string; title: string; minutes: number; estimatedCostUsd: number; liked?: boolean };
 
 export interface PlanInput {
   householdSize: number;
   weeklyBudgetUsd: number | null;
   allergies: string[];
   dislikes: string[];
+  likes: string[];
   // Recipes the model is allowed to pick from for each meal (already filtered server-side)
   candidates: Record<MealType, Candidate[]>;
 }
@@ -42,7 +43,7 @@ export interface PlanProvider {
 function buildPrompt(input: PlanInput): string {
   const list = (type: MealType) =>
     input.candidates[type]
-      .map((r) => `- ${r.id} | ${r.title} | ${r.minutes} min | ~$${r.estimatedCostUsd.toFixed(2)}`)
+      .map((r) => `- ${r.id} | ${r.title} | ${r.minutes} min | ~$${r.estimatedCostUsd.toFixed(2)}${r.liked ? " | liked" : ""}`)
       .join("\n");
 
   return [
@@ -51,10 +52,12 @@ function buildPrompt(input: PlanInput): string {
     `Weekly budget for all 21 meals (USD): ${input.weeklyBudgetUsd ?? "no limit"}`,
     `Allergies (must avoid): ${input.allergies.join(", ") || "none"}`,
     `Dislikes (avoid if possible): ${input.dislikes.join(", ") || "none"}`,
+    `Foods they like: ${input.likes.join(", ") || "none"}`,
     "Rules:",
     "- Give each meal type (breakfast, lunch, dinner) exactly one recipe on each day_of_week from 1 to 7.",
     `- Every dinner must be a different recipe. A lunch recipe may be used at most ${MAX_USES.lunch} times and a breakfast recipe at most ${MAX_USES.breakfast} times in the week.`,
     "- Keep the combined cost of all 21 meals within the weekly budget when one is given, and vary the week.",
+    "- Prefer recipes marked liked when they fit the budget and the other rules, but still vary the week and never pick only liked recipes if that breaks a rule.",
     "- Only use recipe IDs from the list for that meal type. Do not invent IDs.",
     'Return JSON only, in the form {"items":[{"recipe_id":"...","day_of_week":1-7,"meal_type":"breakfast|lunch|dinner"}]}.',
     "Breakfast candidates:",

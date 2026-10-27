@@ -13,6 +13,7 @@ const input = (over: Partial<PlanInput> = {}): PlanInput => ({
   weeklyBudgetUsd: null,
   allergies: [],
   dislikes: [],
+  likes: [],
   candidates: { breakfast: cands("b", [3, 4, 5, 6]), lunch: cands("l", [6, 7, 8, 9, 10]), dinner: cands("d", [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]) },
   ...over,
 });
@@ -49,4 +50,11 @@ Deno.test("basicPlan swaps in cheaper recipes to get under budget", () => {
 Deno.test("basicPlan returns its best effort when the budget cannot be met", () => {
   const plan = basicPlan(input({ weeklyBudgetUsd: 1 }), () => 0);
   assertEquals(validateWeek(plan), null);
+});
+
+Deno.test("basicPlan favors liked recipes, even pricey ones", () => {
+  const dinner = cands("d", [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]).map((c) => (c.id === "d9" ? { ...c, liked: true } : c));
+  const plan = basicPlan(input({ candidates: { ...input().candidates, dinner } }), () => 0.5);
+  assertEquals(validateWeek(plan), null);
+  assert(plan.items.some((i) => i.meal_type === "dinner" && i.recipe_id === "d9"));
 });

@@ -37,6 +37,7 @@ export type Profile = {
   diet: DietId;
   allergies: string[];
   dislikes: string[];
+  likes: string[];
   appliances: ApplianceId[];
 };
 
@@ -105,7 +106,7 @@ export async function loadProfile(userId: string): Promise<(Profile & { saved: b
   const row = check(
     await db()
       .from('profiles')
-      .select('household_size, weekly_budget_usd, diet, allergies, dislikes, appliances')
+      .select('household_size, weekly_budget_usd, diet, allergies, dislikes, likes, appliances')
       .eq('id', userId)
       .maybeSingle(),
   );
@@ -116,6 +117,7 @@ export async function loadProfile(userId: string): Promise<(Profile & { saved: b
     diet: (row.diet ?? 'any') as DietId,
     allergies: row.allergies,
     dislikes: row.dislikes,
+    likes: row.likes,
     appliances: row.appliances as ApplianceId[],
     saved: row.weekly_budget_usd !== null,
   };
@@ -130,6 +132,7 @@ export async function saveProfile(userId: string, p: Profile) {
       diet: p.diet,
       allergies: p.allergies,
       dislikes: p.dislikes,
+      likes: p.likes,
       appliances: p.appliances,
     }),
   );

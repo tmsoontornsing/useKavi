@@ -15,7 +15,11 @@ export function basicPlan(input: PlanInput, rng: () => number = Math.random): Pl
     const need = Math.min(byCost.length, minCandidates(type));
     // Draw from the cheaper part of the list, but not always the same few recipes.
     const pool = byCost.slice(0, Math.max(need, Math.ceil(byCost.length * 0.6)));
-    chosen[type] = shuffle(pool, rng).slice(0, need);
+    // Liked recipes go first, but a liked recipe outside the cheaper part of the list can still make the week.
+    const liked = input.candidates[type].filter((c) => c.liked && !pool.includes(c));
+    const shuffled = shuffle(pool, rng);
+    const ranked = [...liked, ...shuffled.filter((c) => c.liked), ...shuffled.filter((c) => !c.liked)];
+    chosen[type] = ranked.slice(0, need);
   }
 
   // Over budget: replace the chosen recipe whose swap saves the most with the cheapest unused one, until under budget.
