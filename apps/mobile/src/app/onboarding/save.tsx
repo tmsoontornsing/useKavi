@@ -1,14 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
-import { Card, PrimaryButton, ProviderButton, TextButton } from '../../components/Buttons';
+import { Card, PrimaryButton } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
-import { EmailAuthForm } from '../../components/EmailAuthForm';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { applianceName, DIETS } from '../../data/mock';
-import { animateLayout } from '../../motion';
 import { resetTo } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { useTheme } from '../../theme';
@@ -21,50 +19,22 @@ export default function Save() {
   const avoiding = app.allergies.length ? app.allergies.join(', ') : 'Nothing';
   const kitchen = app.appliances.length ? app.appliances.map(applianceName).join(', ') : 'Nothing yet';
 
-  // Sign-in with Apple, Google, or email and password.
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const run = async (work: () => Promise<void>) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await work();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   // New accounts see the paywall once, over their first week; someone returning to an existing account goes straight in.
   const enter = () => {
     resetTo('/week');
     if (from !== 'welcome') router.push('/paywall');
   };
 
-  const withProvider = (provider: 'apple' | 'google') =>
-    run(async () => {
-      if (await app.signInWithProvider(provider)) enter();
-    });
-
-  const withEmail = async (mode: 'signup' | 'signin', email: string, password: string) => {
-    if (mode === 'signin') {
-      await app.signInWithEmail(email, password);
-      enter();
-      return 'signed-in' as const;
-    }
-    const result = await app.signUpWithEmail(email, password);
-    if (result === 'signed-in') enter();
-    return result;
-  };
-
-  const toggleEmail = (open: boolean) => {
-    animateLayout();
-    setError(null);
-    setEmailOpen(open);
-  };
+  // Nobody signed in: the sign-up and sign-in sheet opens on its own the first time this step appears.
+  // Closing it leaves the button below to open it again.
+  const openAuth = () => router.push({ pathname: '/auth', params: { from } });
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!app.live || !app.authReady || app.signedIn || asked.current) return;
+    asked.current = true;
+    openAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app.live, app.authReady, app.signedIn]);
 
   const summary: [string, string][] = [
     ['Diet', dietName],
@@ -74,16 +44,6 @@ export default function Save() {
     ['Kitchen', kitchen],
   ];
 
-  const liveFooter = emailOpen ? (
-    <EmailAuthForm onSubmit={withEmail} onBack={() => toggleEmail(false)} />
-  ) : (
-    <>
-      <ProviderButton provider="apple" disabled={busy} onPress={() => withProvider('apple')} />
-      <ProviderButton provider="google" disabled={busy} onPress={() => withProvider('google')} />
-      <TextButton label="Use email instead" onPress={() => toggleEmail(true)} />
-    </>
-  );
-
   return (
     <OnboardingShell
       step={4}
@@ -92,14 +52,12 @@ export default function Save() {
       title="Save Your Plan"
       intro={
         app.live
-          ? 'Sign in with Apple, Google, or your email so your household settings are saved and your grocery list can be shared.'
+          ? 'Check your answers, then save them to an account. You can change any of this later in Settings.'
           : 'This build runs on example data, so nothing is saved yet.'
       }
       footer={
         <>
-          {app.live ? (
-            liveFooter
-          ) : (
+          {!app.live ? (
             <PrimaryButton
               label="Continue"
               onPress={() => {
@@ -107,22 +65,13 @@ export default function Save() {
                 enter();
               }}
             />
+          ) : app.signedIn ? (
+            <PrimaryButton label="Continue" onPress={enter} />
+          ) : (
+            <PrimaryButton label="Sign Up or Log In" onPress={openAuth} />
           )}
-          {error ? (
-            <AppText variant="subhead" color={c.warn} accessibilityRole="alert" accessibilityLiveRegion="polite">
-              {error}
-            </AppText>
-          ) : null}
           <AppText variant="footnote" style={styles.center}>
-            {'By continuing, you agree to the '}
-            <AppText variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
-              Terms of Service
-            </AppText>
-            {' and acknowledge the '}
-            <AppText variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
-              Privacy Policy
-            </AppText>
-            . Kavi uses your account only to save your settings and sync your list.
+            Kavi uses your account only to save your settings and sync your list.
           </AppText>
         </>
       }

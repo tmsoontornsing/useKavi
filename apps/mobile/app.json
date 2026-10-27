@@ -70,6 +70,20 @@
                 "initialLayout": "widgets/KaviToday.tsx"
               },
               "android": null
+            },
+            {
+              "name": "KaviGroceries",
+              "displayName": "Grocery List",
+              "description": "What is left to buy, and how far along your shopping trip is.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "systemLarge"
+                ],
+                "initialLayout": "widgets/KaviGroceries.tsx"
+              },
+              "android": null
             }
           ]
         }

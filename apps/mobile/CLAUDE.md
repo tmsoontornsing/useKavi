@@ -17,3 +17,7 @@ The Terms of Service and Privacy Policy live in `src/legal/documents.ts`, with b
 ## Reminders
 
 The grocery list's checkbox button sends unchecked items to a "Kavi Groceries" list in Apple Reminders (`src/lib/reminders.ts`, using `expo-calendar/legacy`). iOS only; the button is hidden elsewhere. Kavi creates and reads only that list, and skips items already waiting in it, so sending twice does not duplicate. The permission text lives in the `expo-calendar` plugin entry in `app.json` and takes effect in the next native build; Expo Go shows its own wording.
+
+## Widgets
+
+Two home screen widgets live in `widgets/`: Today's Meals (`KaviToday.tsx`) and Grocery List (`KaviGroceries.tsx`), registered in the `expo-widgets` entry of `app.json`. `src/lib/widgets.ts` sends them data whenever the plan or list changes. Widget code runs in an isolated runtime with no hooks and no app imports, and props travel as plain values: send a list as one string joined with "|", not an array. Widgets need a native build (`npx expo run:ios`); Expo Go cannot show them. If a build fails on Desktop with "resource fork, Finder information, or similar detritus not allowed", iCloud is syncing the project; build from a copy outside Desktop and Documents, and run with `LANG=en_US.UTF-8`.
