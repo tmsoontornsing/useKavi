@@ -9,6 +9,7 @@ import { Chip } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { goToStep } from '../../components/StepHeader';
 import { ALLERGIES, DISLIKES, LIKES } from '../../data/mock';
+import { useT } from '../../i18n';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, useTheme } from '../../theme';
 
@@ -16,6 +17,7 @@ export default function Household() {
   const c = useTheme();
   const app = useApp();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const { t, tn, tx } = useT();
   // The typed amount is kept as text while editing, then clamped to $50 to $400 when committed.
   const [draft, setDraft] = useState(String(app.budget));
   useEffect(() => setDraft(String(app.budget)), [app.budget]);
@@ -23,7 +25,7 @@ export default function Household() {
   const changePeople = (delta: number) => {
     const next = Math.min(12, Math.max(1, app.people + delta));
     app.setPeople(next);
-    AccessibilityInfo.announceForAccessibility(`${next} people`);
+    AccessibilityInfo.announceForAccessibility(tn(next, '{n} person', '{n} people'));
   };
   const commitBudget = () => {
     const n = Math.min(400, Math.max(50, Number(draft) || app.budget));
@@ -53,12 +55,12 @@ export default function Household() {
     <OnboardingShell
       step={2}
       pip="love"
-      backLabel={edit ? 'Back to Settings' : 'Back to step 1'}
-      title="Set Up Your Household"
-      intro="Kavi uses this to size portions and keep each week under budget."
+      backLabel={edit ? t('Back to Settings') : t('Back to step 1')}
+      title={t('Set Up Your Household')}
+      intro={t('Kavi uses this to size portions and keep each week under budget.')}
       footer={
         <PrimaryButton
-          label={edit ? 'Done' : 'Continue'}
+          label={edit ? t('Done') : t('Continue')}
           onPress={() => {
             commitBudget();
             if (edit) router.back();
@@ -69,33 +71,33 @@ export default function Household() {
     >
       <Card style={styles.rowCard}>
         <View style={styles.flex}>
-          <AppText variant="headline">People eating</AppText>
-          <AppText variant="subhead">Adults and kids</AppText>
+          <AppText variant="headline">{t('People eating')}</AppText>
+          <AppText variant="subhead">{t('Adults and kids')}</AppText>
         </View>
         <View style={styles.stepper}>
-          <IconButton icon="remove" label="Fewer people" onPress={() => changePeople(-1)} />
+          <IconButton icon="remove" label={t('Fewer people')} onPress={() => changePeople(-1)} />
           <AppText
-            accessibilityLabel={`${app.people} people`}
+            accessibilityLabel={tn(app.people, '{n} person', '{n} people')}
             accessibilityLiveRegion="polite"
             style={[styles.count, { fontFamily: fonts.displaySemi }]}
           >
             {app.people}
           </AppText>
-          <IconButton icon="add" label="More people" onPress={() => changePeople(1)} />
+          <IconButton icon="add" label={t('More people')} onPress={() => changePeople(1)} />
         </View>
       </Card>
 
       <Card style={styles.budgetCard}>
         <View style={styles.budgetHead}>
           <AppText variant="headline" style={styles.flex} nativeID="budgetLabel">
-            Weekly grocery budget
+            {t('Weekly grocery budget')}
           </AppText>
           <View style={[styles.amount, { borderColor: c.control }]}>
             <AppText style={[styles.amountText, { fontFamily: fonts.displaySemi }]}>$</AppText>
             <TextInput
-              accessibilityLabel="Weekly grocery budget in dollars"
+              accessibilityLabel={t('Weekly grocery budget in dollars')}
               value={draft}
-              onChangeText={(t) => setDraft(t.replace(/[^0-9]/g, ''))}
+              onChangeText={(text) => setDraft(text.replace(/[^0-9]/g, ''))}
               onBlur={commitBudget}
               keyboardType="number-pad"
               returnKeyType="done"
@@ -105,7 +107,7 @@ export default function Household() {
           </View>
         </View>
         <Slider
-          accessibilityLabel="Weekly grocery budget slider"
+          accessibilityLabel={t('Weekly grocery budget slider')}
           minimumValue={50}
           maximumValue={400}
           step={10}
@@ -118,45 +120,44 @@ export default function Household() {
         />
         <View style={styles.scale}>
           <AppText variant="footnote">$50</AppText>
-          <AppText variant="footnote">Tap the amount to type it</AppText>
+          <AppText variant="footnote">{t('Tap the amount to type it')}</AppText>
           <AppText variant="footnote">$400</AppText>
         </View>
       </Card>
 
       <View style={styles.group}>
-        <AppText variant="eyebrow" accessibilityRole="header">Allergies to avoid</AppText>
+        <AppText variant="eyebrow" accessibilityRole="header">{t('Allergies to avoid')}</AppText>
         <View style={styles.chips}>
           {ALLERGIES.map((a) => (
-            <Chip key={a} label={a} selected={app.allergies.includes(a)} onPress={() => app.toggleAllergy(a)} />
+            <Chip key={a} label={tx(a)} selected={app.allergies.includes(a)} onPress={() => app.toggleAllergy(a)} />
           ))}
         </View>
         <View style={[styles.allergyNote, { backgroundColor: c.warnBg }]}>
           <AppText variant="footnote" color={c.warn}>
-            Kavi leaves out recipes tagged with these allergens, but tags can be wrong and products vary by brand.
-            Always read labels, and check every ingredient yourself if an allergy is severe.
+            {t('Kavi leaves out recipes tagged with these allergens, but tags can be wrong and products vary by brand. Always read labels, and check every ingredient yourself if an allergy is severe.')}
           </AppText>
         </View>
       </View>
 
       <View style={styles.group}>
-        <AppText variant="eyebrow" accessibilityRole="header">Dislikes, avoided when possible</AppText>
+        <AppText variant="eyebrow" accessibilityRole="header">{t('Dislikes, avoided when possible')}</AppText>
         <View style={styles.chips}>
           {DISLIKES.map((d) => (
-            <Chip key={d} label={d} selected={app.dislikes.includes(d)} onPress={() => app.toggleDislike(d)} />
+            <Chip key={d} label={tx(d)} selected={app.dislikes.includes(d)} onPress={() => app.toggleDislike(d)} />
           ))}
         </View>
       </View>
 
       <View style={styles.group}>
-        <AppText variant="eyebrow" accessibilityRole="header">Foods you like</AppText>
+        <AppText variant="eyebrow" accessibilityRole="header">{t('Foods you like')}</AppText>
         <View style={styles.chips}>
           {likeChips.map((f) => (
-            <Chip key={f} label={f} selected={app.likes.includes(f)} onPress={() => app.toggleLike(f)} />
+            <Chip key={f} label={tx(f)} selected={app.likes.includes(f)} onPress={() => app.toggleLike(f)} />
           ))}
         </View>
         <TextInput
-          accessibilityLabel="Add another food you like"
-          placeholder="Add another, like pad thai"
+          accessibilityLabel={t('Add another food you like')}
+          placeholder={t('Add another, like pad thai')}
           placeholderTextColor={c.muted}
           value={food}
           onChangeText={setFood}

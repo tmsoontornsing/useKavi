@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,48 +8,53 @@ import { PrimaryButton, TextButton } from '../components/Buttons';
 import { Mascot } from '../components/Mascot';
 import { PantryDrift } from '../components/PantryDrift';
 import { WeekJar } from '../components/WeekJar';
+import { useT } from '../i18n';
 import { fonts, useTheme } from '../theme';
-
-// A sample week for 3 vegetarians on $95: each day's dinner, and what that whole day costs.
-const EXAMPLE = [
-  { day: 'Mon', meal: 'Chickpea shakshuka', cost: 12 },
-  { day: 'Tue', meal: 'Peanut noodle bowls', cost: 11 },
-  { day: 'Wed', meal: 'Stuffed sweet potatoes', cost: 13 },
-  { day: 'Thu', meal: 'Veggie fried rice', cost: 10 },
-  { day: 'Fri', meal: 'Black bean quesadillas', cost: 14 },
-  { day: 'Sat', meal: 'Mushroom risotto', cost: 12 },
-  { day: 'Sun', meal: 'Lentil shepherd’s pie', cost: 9 },
-];
 
 export default function Welcome() {
   const c = useTheme();
+  const { t } = useT();
+  // A sample week for 3 vegetarians on $95: each day's dinner, and what that whole day costs.
+  // Memoized per language: WeekJar restarts its animation when `days` changes.
+  const example = useMemo(
+    () => [
+      { day: t('Mon'), meal: t('Chickpea shakshuka'), cost: 12 },
+      { day: t('Tue'), meal: t('Peanut noodle bowls'), cost: 11 },
+      { day: t('Wed'), meal: t('Stuffed sweet potatoes'), cost: 13 },
+      { day: t('Thu'), meal: t('Veggie fried rice'), cost: 10 },
+      { day: t('Fri'), meal: t('Black bean quesadillas'), cost: 14 },
+      { day: t('Sat'), meal: t('Mushroom risotto'), cost: 12 },
+      { day: t('Sun'), meal: t('Lentil shepherd’s pie'), cost: 9 },
+    ],
+    [t],
+  );
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
       <PantryDrift />
       <ScrollView contentContainerStyle={styles.content}>
-        <Mascot pose="wave" size={120} tappable label="Pip, Kavi's jar, waving hello" style={styles.pip} />
+        <Mascot pose="wave" size={120} tappable label={t('Pip, Kavi\'s jar, waving hello')} style={styles.pip} />
         <View style={styles.copy}>
           <AppText style={styles.hero} accessibilityRole="header">
-            Every meal of the week, inside your grocery budget.
+            {t('Every meal of the week, inside your grocery budget.')}
           </AppText>
           <AppText color={c.muted}>
-            Tell Kavi who you cook for and what you spend. It plans the week and builds the grocery list.
+            {t('Tell Kavi who you cook for and what you spend. It plans the week and builds the grocery list.')}
           </AppText>
         </View>
 
         <WeekJar
-          title="Example week · 3 people, vegetarian"
-          days={EXAMPLE}
+          title={t('Example week · 3 people, vegetarian')}
+          days={example}
           budget={95}
-          label="Example week for 3 vegetarian people. Seven dinners, each day's meals adding up to $81 of a $95 budget, $14 to spare."
+          label={t('Example week for 3 vegetarian people. Seven dinners, each day\'s meals adding up to $81 of a $95 budget, $14 to spare.')}
         />
       </ScrollView>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Get Started" onPress={() => router.push('/onboarding/diet')} />
-        <TextButton label="I Already Have an Account" onPress={() => router.push('/onboarding/save?from=welcome')} />
+        <PrimaryButton label={t('Get Started')} onPress={() => router.push('/onboarding/diet')} />
+        <TextButton label={t('I Already Have an Account')} onPress={() => router.push('/onboarding/save?from=welcome')} />
         <AppText variant="footnote" style={styles.center}>
-          No account needed until you save your first plan.
+          {t('No account needed until you save your first plan.')}
         </AppText>
       </View>
     </SafeAreaView>

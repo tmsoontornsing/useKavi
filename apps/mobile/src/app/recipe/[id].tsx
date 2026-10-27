@@ -9,17 +9,19 @@ import { Card, TextButton } from '../../components/Buttons';
 import { Mascot } from '../../components/Mascot';
 import { NutritionFacts } from '../../components/NutritionFacts';
 import { applianceName, MEAL_LABELS, money, type RecipeView } from '../../data/mock';
+import { comma, useT } from '../../i18n';
 import { animateLayout, haptic, PressableScale, Reveal } from '../../motion';
 import { backOr } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { fonts, radius, space, useTheme } from '../../theme';
 
-// Title-case a dish name for the large heading.
+// Title-case a dish name for the large heading. English only; other languages keep the translation's own casing.
 const titleCase = (s: string) => s.replace(/(^|[\s-])(\w)/g, (m) => m.toUpperCase()).replace(/ (And|With) /g, (m) => m.toLowerCase());
 
 export default function Recipe() {
   const c = useTheme();
   const app = useApp();
+  const { t, tx, line, minutes, midSentence, lang } = useT();
   const { id, slot } = useLocalSearchParams<{ id: string; slot?: string }>();
   const slotIndex = slot !== undefined && Number.isInteger(Number(slot)) ? Number(slot) : undefined;
   // Opened from a slot in the plan, follow that slot so a swap updates this screen too.
@@ -52,9 +54,9 @@ export default function Recipe() {
     return (
       <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
         {view === undefined ? (
-          <ActivityIndicator accessibilityLabel="Loading recipe" color={c.primary} style={styles.missing} />
+          <ActivityIndicator accessibilityLabel={t('Loading recipe')} color={c.primary} style={styles.missing} />
         ) : (
-          <AppText style={styles.missing}>This recipe isn’t available.</AppText>
+          <AppText style={styles.missing}>{t('This recipe isn’t available.')}</AppText>
         )}
       </SafeAreaView>
     );
@@ -65,18 +67,19 @@ export default function Recipe() {
   const total = detail
     ? detail.ingredients.reduce((s, i) => s + (i.price === 'pantry' ? 0 : i.price), 0)
     : meal.cost;
+  const missingNames = missing.map((m) => tx(applianceName(m)).toLowerCase());
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top']}>
       <View style={styles.bar}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back to This Week"
+          accessibilityLabel={t('Back to This Week')}
           onPress={() => backOr('/week')}
           style={({ pressed }) => [styles.back, { opacity: pressed ? 0.6 : 1 }]}
         >
           <Ionicons name="chevron-back" size={24} color={c.primaryText} />
-          <AppText color={c.primaryText}>This Week</AppText>
+          <AppText color={c.primaryText}>{t('This Week')}</AppText>
         </Pressable>
         {planned ? (
           <Pressable
@@ -85,17 +88,27 @@ export default function Recipe() {
             style={({ pressed }) => [styles.swap, { backgroundColor: c.tint, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="swap-horizontal" size={18} color={c.primaryText} />
-            <AppText variant="subhead" weight="600" color={c.primaryText}>{`Swap ${MEAL_LABELS[planned.type]}`}</AppText>
+            <AppText variant="subhead" weight="600" color={c.primaryText}>{t('Swap {meal}', { meal: midSentence(tx(MEAL_LABELS[planned.type])) })}</AppText>
           </Pressable>
         ) : null}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.titleBlock}>
-          <AppText variant="eyebrow">{planned ? `${planned.dayLong} ${MEAL_LABELS[planned.type].toLowerCase()}` : MEAL_LABELS[meal.type]}</AppText>
-          <AppText style={styles.title} accessibilityRole="header">{titleCase(meal.name)}</AppText>
+          <AppText variant="eyebrow">
+            {planned
+              ? t('{day} {meal}', { day: tx(planned.dayLong), meal: tx(MEAL_LABELS[planned.type]).toLowerCase() })
+              : tx(MEAL_LABELS[meal.type])}
+          </AppText>
+          <AppText style={styles.title} accessibilityRole="header">
+            {lang === 'en' ? titleCase(meal.name) : tx(meal.name)}
+          </AppText>
           <View style={styles.pills}>
-            {[meal.minutes, `Serves ${detail?.serves ?? app.people}`, `${money(total)} est.`].map((p) => (
+            {[
+              minutes(meal.minutes),
+              t('Serves {n}', { n: detail?.serves ?? app.people }),
+              t('{amount} est.', { amount: money(total) }),
+            ].map((p) => (
               <View key={p} style={[styles.pill, { backgroundColor: c.card }]}>
                 <AppText variant="subhead" color={c.text} style={{ fontVariant: ['tabular-nums'] }}>{p}</AppText>
               </View>
@@ -107,15 +120,16 @@ export default function Recipe() {
           <>
             {detail.appliances.length > 0 ? (
             <View style={styles.section}>
-              <AppText variant="eyebrow" accessibilityRole="header">Equipment</AppText>
+              <AppText variant="eyebrow" accessibilityRole="header">{t('Equipment')}</AppText>
               <View style={styles.pills}>
                 {detail.appliances.map((id) => {
                   const have = !missing.includes(id);
+                  const name = tx(applianceName(id));
                   return (
                     <View
                       key={id}
                       accessible
-                      accessibilityLabel={`${applianceName(id)}, ${have ? 'in your kitchen' : 'not in your kitchen'}`}
+                      accessibilityLabel={have ? t('{item}, in your kitchen', { item: name }) : t('{item}, not in your kitchen', { item: name })}
                       style={[styles.equip, { backgroundColor: have ? c.card : c.warnBg }]}
                     >
                       <Ionicons
@@ -123,7 +137,7 @@ export default function Recipe() {
                         size={16}
                         color={have ? c.primaryText : c.warn}
                       />
-                      <AppText variant="subhead" weight="500" color={have ? c.text : c.warn}>{applianceName(id)}</AppText>
+                      <AppText variant="subhead" weight="500" color={have ? c.text : c.warn}>{name}</AppText>
                     </View>
                   );
                 })}
@@ -131,26 +145,31 @@ export default function Recipe() {
               {missing.length > 0 ? (
                 <View style={styles.missingRow}>
                   <AppText variant="footnote" color={c.warn} style={styles.flex}>
-                    {`Your kitchen doesn’t list a ${missing.map((m) => applianceName(m).toLowerCase()).join(' or a ')}.`}
+                    {missingNames.length === 1
+                      ? t('Your kitchen doesn’t list a {item}.', { item: missingNames[0] })
+                      : t('Your kitchen doesn’t list a {items} or a {last}.', {
+                          items: missingNames.slice(0, -1).join(comma()),
+                          last: missingNames[missingNames.length - 1],
+                        })}
                   </AppText>
-                  <TextButton label="Update Kitchen" onPress={() => router.push('/onboarding/kitchen?edit=1')} />
+                  <TextButton label={t('Update Kitchen')} onPress={() => router.push('/onboarding/kitchen?edit=1')} />
                 </View>
               ) : null}
             </View>
             ) : null}
 
             <View style={styles.section}>
-              <AppText variant="eyebrow" accessibilityRole="header">Ingredients</AppText>
+              <AppText variant="eyebrow" accessibilityRole="header">{t('Ingredients')}</AppText>
               <Card style={styles.list}>
                 {detail.ingredients.map((ing, i) => (
                   <View
                     key={ing.name}
                     style={[styles.ingredient, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }]}
                   >
-                    <AppText style={styles.flex}>{ing.name}</AppText>
+                    <AppText style={styles.flex}>{line(ing.name)}</AppText>
                     {ing.price === 'pantry' ? (
                       <View style={[styles.tag, { backgroundColor: c.tint }]}>
-                        <AppText variant="footnote" weight="600" color={c.primaryText}>Pantry</AppText>
+                        <AppText variant="footnote" weight="600" color={c.primaryText}>{t('Pantry')}</AppText>
                       </View>
                     ) : (
                       <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>{money(ing.price)}</AppText>
@@ -158,24 +177,26 @@ export default function Recipe() {
                   </View>
                 ))}
               </Card>
-              <AppText variant="footnote">Pantry items cost $0 here because they’re already on your shelf.</AppText>
+              <AppText variant="footnote">{t('Pantry items cost $0 here because they’re already on your shelf.')}</AppText>
               {app.allergies.length > 0 ? (
                 <AppText variant="footnote" color={c.warn}>
-                  {`Check every label for ${app.allergies.join(', ').toLowerCase()}. Products vary by brand, and Kavi can’t guarantee a recipe is allergen-free.`}
+                  {t('Check every label for {allergies}. Products vary by brand, and Kavi can’t guarantee a recipe is allergen-free.', {
+                    allergies: app.allergies.map(tx).join(comma()).toLowerCase(),
+                  })}
                 </AppText>
               ) : null}
             </View>
 
             {detail.nutrition ? (
               <View style={styles.section}>
-                <AppText variant="eyebrow" accessibilityRole="header">Nutrition</AppText>
+                <AppText variant="eyebrow" accessibilityRole="header">{t('Nutrition')}</AppText>
                 <NutritionFacts nutrition={detail.nutrition} serves={detail.serves} />
               </View>
             ) : null}
 
             <View style={styles.section}>
               <View style={styles.stepsHead}>
-                <AppText variant="eyebrow" accessibilityRole="header">Steps</AppText>
+                <AppText variant="eyebrow" accessibilityRole="header">{t('Steps')}</AppText>
                 {allDone ? null : <Mascot pose="read" size={72} decorative tappable style={styles.reader} />}
               </View>
               {detail.steps.map((step, i) => {
@@ -185,7 +206,7 @@ export default function Recipe() {
                     key={step}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: done }}
-                    accessibilityHint="Marks this step as done"
+                    accessibilityHint={t('Marks this step as done')}
                     to={0.98}
                     onPress={() => {
                       haptic.tap();
@@ -201,7 +222,7 @@ export default function Recipe() {
                         <AppText variant="subhead" weight="700" color={c.primaryText}>{i + 1}</AppText>
                       )}
                     </View>
-                    <AppText style={[styles.flex, done && styles.stepDone]} color={done ? c.muted : c.text}>{step}</AppText>
+                    <AppText style={[styles.flex, done && styles.stepDone]} color={done ? c.muted : c.text}>{tx(step)}</AppText>
                   </PressableScale>
                 );
               })}
@@ -210,8 +231,8 @@ export default function Recipe() {
                   <Card style={styles.finished}>
                     <Mascot pose="yum" size={96} decorative tappable />
                     <View style={styles.flex}>
-                      <AppText variant="headline">Dinner is ready</AppText>
-                      <AppText variant="subhead">Every step is done. Enjoy it.</AppText>
+                      <AppText variant="headline">{t('Dinner is ready')}</AppText>
+                      <AppText variant="subhead">{t('Every step is done. Enjoy it.')}</AppText>
                     </View>
                   </Card>
                 </Reveal>
@@ -219,10 +240,10 @@ export default function Recipe() {
             </View>
           </>
         ) : view === undefined ? (
-          <ActivityIndicator accessibilityLabel="Loading ingredients and steps" color={c.primary} />
+          <ActivityIndicator accessibilityLabel={t('Loading ingredients and steps')} color={c.primary} />
         ) : (
           <Card style={styles.pending}>
-            <AppText color={c.muted}>Ingredients and steps for this meal aren’t available yet.</AppText>
+            <AppText color={c.muted}>{t('Ingredients and steps for this meal aren’t available yet.')}</AppText>
           </Card>
         )}
       </ScrollView>

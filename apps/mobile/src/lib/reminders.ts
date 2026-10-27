@@ -2,9 +2,11 @@ import * as Calendar from 'expo-calendar/legacy';
 import { Platform } from 'react-native';
 
 import type { GroceryAisle } from '../data/mock';
+import { line, t, tx } from '../i18n';
 
 // Sends the grocery list to Apple Reminders so it can be checked off in the app people already shop with.
 // Kavi keeps its own list, "Kavi Groceries", and never reads or changes any other reminder list.
+// The list name is never translated: it is how Kavi finds its own list again. Item titles are in the language on screen.
 // iOS only: Android has no Reminders app, so callers hide the button there.
 
 export const remindersAvailable = Platform.OS === 'ios';
@@ -24,7 +26,7 @@ async function kaviList(): Promise<string> {
   if (existing) return existing.id;
 
   const home = lists.find((l) => l.allowsModifications && l.source);
-  if (!home) throw new Error('Reminders has no list Kavi can add to. Open Reminders and make a list first.');
+  if (!home) throw new Error(t('Reminders has no list Kavi can add to. Open Reminders and make a list first.'));
   return Calendar.createCalendarAsync({
     title: LIST_NAME,
     name: LIST_NAME,
@@ -49,14 +51,17 @@ export async function sendToReminders(aisles: GroceryAisle[], checked: Record<st
   const waiting = await Calendar.getRemindersAsync([listId], null, null, null);
   const have = new Set(waiting.filter((r) => !r.completed).map((r) => (r.title ?? '').trim().toLowerCase()));
 
-  const fresh = items.filter((i) => !have.has(i.name.trim().toLowerCase()));
+  // Skips items already waiting, whether they were sent in this language or in English.
+  const fresh = items
+    .map((i) => ({ ...i, title: line(i.name) }))
+    .filter((i) => !have.has(i.title.trim().toLowerCase()) && !have.has(i.name.trim().toLowerCase()));
   // A few at a time: the system Reminders store handles them quickly but not all at once.
   for (let i = 0; i < fresh.length; i += 8) {
     await Promise.all(
       fresh.slice(i, i + 8).map((item) =>
         Calendar.createReminderAsync(listId, {
-          title: item.name,
-          notes: `${item.aisle} · about $${item.price.toFixed(2)}`,
+          title: item.title,
+          notes: t('{aisle} · about {price}', { aisle: tx(item.aisle), price: `$${item.price.toFixed(2)}` }),
         }),
       ),
     );

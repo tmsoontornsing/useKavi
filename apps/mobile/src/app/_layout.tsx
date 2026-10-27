@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { LanguageProvider } from '../i18n';
 import { AppStateProvider } from '../state/AppState';
 import { useTheme } from '../theme';
 
@@ -20,6 +21,7 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
+    <LanguageProvider>
     <AppStateProvider>
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
@@ -36,7 +38,9 @@ export default function RootLayout() {
         <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
         <Stack.Screen name="legal/[doc]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="language" options={{ presentation: 'modal' }} />
       </Stack>
     </AppStateProvider>
+    </LanguageProvider>
   );
 }

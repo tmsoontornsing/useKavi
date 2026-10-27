@@ -17,6 +17,7 @@ import {
   type RecipeView,
   type Shelf,
 } from '../data/mock';
+import { t, useLanguage } from '../i18n';
 import * as api from '../lib/api';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { syncWidgets } from '../lib/widgets';
@@ -88,7 +89,7 @@ const Ctx = createContext<(AppState & Actions) | null>(null);
 const LIVE = isSupabaseConfigured;
 
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-const message = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong. Try again.');
+const message = (e: unknown) => (e instanceof Error ? e.message : t('Something went wrong. Try again.'));
 
 // ---- Example data, used when Supabase is not configured
 
@@ -101,9 +102,11 @@ const DEMO_GROCERIES: GroceryAisle[] = GROCERIES.map((a) => ({
   name: a.name,
   items: a.items.map((i) => ({ key: i.name, ...i })),
 }));
-const DEMO_GROCERY_TOTAL = GROCERIES.reduce((s, a) => s + a.items.reduce((t, i) => t + i.price, 0), 0);
+const DEMO_GROCERY_TOTAL = GROCERIES.reduce((s, a) => s + a.items.reduce((sum, i) => sum + i.price, 0), 0);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
+  // Reading the language re-renders the provider when it changes, so weekLabel and the widgets follow it.
+  const { lang } = useLanguage();
   // Household. These start as onboarding defaults; once signed in they mirror the saved profile.
   const [people, setPeopleRaw] = useState(4);
   // Covers all three meals a day, so the default is higher than it was for dinners alone.
@@ -282,10 +285,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setPlanError(null);
   };
 
-  // Keep the home screen widget in step with the plan and the grocery checklist.
+  // Keep the home screen widget in step with the plan and the grocery checklist, and resend in a new language.
   useEffect(() => {
     syncWidgets(plan, groceries, checked);
-  }, [plan, groceries, checked]);
+  }, [plan, groceries, checked, lang]);
 
   const signedIn = LIVE ? session !== null : demoSignedIn;
   const planTotal = plan.reduce((s, m) => s + m.cost, 0);
@@ -309,7 +312,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     planError,
     plan,
     planTotal,
-    weekLabel: weekStart ? api.weekLabel(weekStart) : LIVE ? api.weekLabel(api.currentWeekStart()) : 'Oct 27 to Nov 2',
+    weekLabel: weekStart ? api.weekLabel(weekStart) : LIVE ? api.weekLabel(api.currentWeekStart()) : api.weekLabel('2025-10-27'),
     groceries,
     groceryTotal,
     pantrySavings,

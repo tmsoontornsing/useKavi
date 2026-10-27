@@ -7,6 +7,7 @@ import { Card, PrimaryButton } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { applianceName, DIETS } from '../../data/mock';
+import { comma, useT } from '../../i18n';
 import { resetTo } from '../../navigation';
 import { useApp } from '../../state/AppState';
 import { useTheme } from '../../theme';
@@ -15,9 +16,10 @@ export default function Save() {
   const c = useTheme();
   const app = useApp();
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const dietName = DIETS.find((d) => d.id === app.diet)?.name ?? 'Everything';
-  const avoiding = app.allergies.length ? app.allergies.join(', ') : 'Nothing';
-  const kitchen = app.appliances.length ? app.appliances.map(applianceName).join(', ') : 'Nothing yet';
+  const { t, tx } = useT();
+  const dietName = tx(DIETS.find((d) => d.id === app.diet)?.name ?? 'Everything');
+  const avoiding = app.allergies.length ? app.allergies.map(tx).join(comma()) : t('Nothing');
+  const kitchen = app.appliances.length ? app.appliances.map((a) => tx(applianceName(a))).join(comma()) : t('Nothing yet');
 
   // New accounts see the paywall once, over their first week; someone returning to an existing account goes straight in.
   const enter = () => {
@@ -37,41 +39,41 @@ export default function Save() {
   }, [app.live, app.authReady, app.signedIn]);
 
   const summary: [string, string][] = [
-    ['Diet', dietName],
-    ['People', String(app.people)],
-    ['Weekly budget', `$${app.budget}`],
-    ['Avoiding', avoiding],
-    ['Kitchen', kitchen],
+    [t('Diet'), dietName],
+    [t('People'), String(app.people)],
+    [t('Weekly budget'), `$${app.budget}`],
+    [t('Avoiding'), avoiding],
+    [t('Kitchen'), kitchen],
   ];
 
   return (
     <OnboardingShell
       step={4}
       pip="save"
-      backLabel={from === 'welcome' ? 'Back to welcome' : 'Back to step 3'}
-      title="Save Your Plan"
+      backLabel={from === 'welcome' ? t('Back to welcome') : t('Back to step 3')}
+      title={t('Save Your Plan')}
       intro={
         app.live
-          ? 'Check your answers, then save them to an account. You can change any of this later in Settings.'
-          : 'This build runs on example data, so nothing is saved yet.'
+          ? t('Check your answers, then save them to an account. You can change any of this later in Settings.')
+          : t('This build runs on example data, so nothing is saved yet.')
       }
       footer={
         <>
           {!app.live ? (
             <PrimaryButton
-              label="Continue"
+              label={t('Continue')}
               onPress={() => {
                 app.signIn();
                 enter();
               }}
             />
           ) : app.signedIn ? (
-            <PrimaryButton label="Continue" onPress={enter} />
+            <PrimaryButton label={t('Continue')} onPress={enter} />
           ) : (
-            <PrimaryButton label="Sign Up or Log In" onPress={openAuth} />
+            <PrimaryButton label={t('Sign Up or Log In')} onPress={openAuth} />
           )}
           <AppText variant="footnote" style={styles.center}>
-            Kavi uses your account only to save your settings and sync your list.
+            {t('Kavi uses your account only to save your settings and sync your list.')}
           </AppText>
         </>
       }
@@ -90,12 +92,12 @@ export default function Save() {
 
       <Card style={styles.remind}>
         <View style={styles.flex}>
-          <AppText variant="headline">Sunday reminder</AppText>
+          <AppText variant="headline">{t('Sunday reminder')}</AppText>
           <AppText variant="subhead">
-            A note at 5 PM when next week’s plan is ready. iOS asks for permission when you turn this on.
+            {t('A note at 5 PM when next week’s plan is ready. iOS asks for permission when you turn this on.')}
           </AppText>
         </View>
-        <KaviSwitch label="Sunday reminder" value={app.remindSunday} onValueChange={app.setRemindSunday} />
+        <KaviSwitch label={t('Sunday reminder')} value={app.remindSunday} onValueChange={app.setRemindSunday} />
       </Card>
     </OnboardingShell>
   );

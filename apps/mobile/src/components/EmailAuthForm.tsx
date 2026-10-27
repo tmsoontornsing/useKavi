@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState, type ElementRef } from 'react';
 import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { useT } from '../i18n';
 import type { EmailSignUpResult } from '../lib/api';
 import { animateLayout, haptic, PressableScale, reduceMotion, Reveal } from '../motion';
 import { fonts, radius, useTheme } from '../theme';
@@ -23,7 +24,6 @@ function strength(pw: string) {
   ];
   return checks.filter(Boolean).length;
 }
-const STRENGTH_LABEL = ['Too short', 'Weak', 'Okay', 'Good', 'Strong'];
 
 // Email and password sign-up or sign-in. onSubmit resolves when the person is signed in or told to confirm their email,
 // and throws a readable message otherwise.
@@ -35,6 +35,8 @@ export function EmailAuthForm({
   onBack: () => void;
 }) {
   const c = useTheme();
+  const { t } = useT();
+  const strengthLabel = [t('Too short'), t('Weak'), t('Okay'), t('Good'), t('Strong')];
   const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,9 +85,9 @@ export function EmailAuthForm({
 
   const submit = async () => {
     if (busy) return;
-    if (!looksLikeEmail(email)) return fail('Enter the email you want to use.');
-    if (mode === 'signup' && password.length < MIN_LENGTH) return fail(`Use at least ${MIN_LENGTH} characters for the password.`);
-    if (mode === 'signin' && !password) return fail('Enter your password.');
+    if (!looksLikeEmail(email)) return fail(t('Enter the email you want to use.'));
+    if (mode === 'signup' && password.length < MIN_LENGTH) return fail(t('Use at least {n} characters for the password.', { n: MIN_LENGTH }));
+    if (mode === 'signin' && !password) return fail(t('Enter your password.'));
     setBusy(true);
     setError(null);
     try {
@@ -143,21 +145,21 @@ export function EmailAuthForm({
               style={styles.segmentItem}
             >
               <AppText weight="600" color={mode === m ? c.text : c.muted}>
-                {m === 'signup' ? 'Create account' : 'Sign in'}
+                {m === 'signup' ? t('Create account') : t('Sign in')}
               </AppText>
             </Pressable>
           ))}
         </View>
 
         <TextInput
-          accessibilityLabel="Email"
+          accessibilityLabel={t('Email')}
           autoCapitalize="none"
           autoComplete="email"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="emailAddress"
           returnKeyType="next"
-          placeholder="Email"
+          placeholder={t('Email')}
           placeholderTextColor={c.muted}
           value={email}
           onChangeText={setEmail}
@@ -170,14 +172,14 @@ export function EmailAuthForm({
         <View>
           <TextInput
             ref={passwordRef}
-            accessibilityLabel="Password"
+            accessibilityLabel={t('Password')}
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             textContentType={mode === 'signup' ? 'newPassword' : 'password'}
             secureTextEntry={!show}
             returnKeyType="go"
-            placeholder="Password"
+            placeholder={t('Password')}
             placeholderTextColor={c.muted}
             value={password}
             onChangeText={setPassword}
@@ -188,7 +190,7 @@ export function EmailAuthForm({
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={show ? 'Hide password' : 'Show password'}
+            accessibilityLabel={show ? t('Hide password') : t('Show password')}
             hitSlop={8}
             onPress={() => {
               haptic.select();
@@ -217,7 +219,7 @@ export function EmailAuthForm({
                 </View>
               ))}
             </View>
-            <AppText variant="footnote" style={styles.meterLabel}>{STRENGTH_LABEL[score]}</AppText>
+            <AppText variant="footnote" style={styles.meterLabel}>{strengthLabel[score]}</AppText>
           </Reveal>
         ) : null}
 
@@ -238,13 +240,13 @@ export function EmailAuthForm({
             <ActivityIndicator color={c.onPrimary} />
           ) : (
             <AppText style={{ fontFamily: fonts.displaySemi, fontSize: 17 }} color={c.onPrimary}>
-              {mode === 'signup' ? 'Create account' : 'Sign in'}
+              {mode === 'signup' ? t('Create account') : t('Sign in')}
             </AppText>
           )}
         </PressableScale>
 
         <View style={styles.center}>
-          <TextButton label="Use Apple or Google instead" onPress={onBack} />
+          <TextButton label={t('Use Apple or Google instead')} onPress={onBack} />
         </View>
       </Animated.View>
     </Reveal>
@@ -254,6 +256,7 @@ export function EmailAuthForm({
 // Shown when the project asks for the address to be confirmed before the first sign-in.
 function CheckInbox({ email, onBack }: { email: string; onBack: () => void }) {
   const c = useTheme();
+  const { t } = useT();
   const pop = useRef(new Animated.Value(reduceMotion() ? 1 : 0)).current;
   useEffect(() => {
     if (reduceMotion()) return;
@@ -267,11 +270,11 @@ function CheckInbox({ email, onBack }: { email: string; onBack: () => void }) {
       >
         <Ionicons name="mail-open-outline" size={30} color={c.primaryText} />
       </Animated.View>
-      <AppText variant="headline" accessibilityRole="header">Check your email</AppText>
+      <AppText variant="headline" accessibilityRole="header">{t('Check your email')}</AppText>
       <AppText variant="subhead" style={styles.centerText}>
-        We sent a link to {email}. Tap it on this phone to finish creating your account, then sign in here.
+        {t('We sent a link to {email}. Tap it on this phone to finish creating your account, then sign in here.', { email })}
       </AppText>
-      <TextButton label="Use a different email" onPress={onBack} />
+      <TextButton label={t('Use a different email')} onPress={onBack} />
     </Reveal>
   );
 }

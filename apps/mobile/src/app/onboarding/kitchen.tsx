@@ -7,6 +7,7 @@ import { CheckCircle } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { goToStep } from '../../components/StepHeader';
 import { APPLIANCES } from '../../data/mock';
+import { useT } from '../../i18n';
 import { haptic, PressableScale } from '../../motion';
 import { useApp } from '../../state/AppState';
 import { useTheme } from '../../theme';
@@ -15,23 +16,24 @@ export default function Kitchen() {
   const c = useTheme();
   const { appliances, toggleAppliance } = useApp();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const { t, tn, tx } = useT();
 
   return (
     <OnboardingShell
       step={3}
       pip="cook"
-      backLabel={edit ? 'Back to Settings' : 'Back to step 2'}
-      title="What’s in Your Kitchen?"
-      intro="Tick what you have. Kavi only plans meals you can cook with it."
+      backLabel={edit ? t('Back to Settings') : t('Back to step 2')}
+      title={t('What’s in Your Kitchen?')}
+      intro={t('Tick what you have. Kavi only plans meals you can cook with it.')}
       footer={
         <PrimaryButton
-          label={edit ? 'Done' : 'Continue'}
+          label={edit ? t('Done') : t('Continue')}
           onPress={() => (edit ? router.back() : goToStep(3, 4))}
         />
       }
     >
       <Card style={styles.list}>
-        <View accessibilityRole="list" accessibilityLabel="Kitchen appliances">
+        <View accessibilityRole="list" accessibilityLabel={t('Kitchen appliances')}>
           {APPLIANCES.map((a, i) => {
             const on = appliances.includes(a.id);
             return (
@@ -39,7 +41,7 @@ export default function Kitchen() {
                 key={a.id}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
-                accessibilityLabel={a.name}
+                accessibilityLabel={tx(a.name)}
                 to={0.98}
                 onPress={() => {
                   haptic.tap();
@@ -53,8 +55,8 @@ export default function Kitchen() {
               >
                 <CheckCircle on={on} />
                 <View style={styles.text}>
-                  <AppText variant="headline">{a.name}</AppText>
-                  {a.detail ? <AppText variant="subhead">{a.detail}</AppText> : null}
+                  <AppText variant="headline">{tx(a.name)}</AppText>
+                  {a.detail ? <AppText variant="subhead">{tx(a.detail)}</AppText> : null}
                 </View>
               </PressableScale>
             );
@@ -63,8 +65,12 @@ export default function Kitchen() {
       </Card>
       <AppText variant="footnote" accessibilityLiveRegion="polite">
         {appliances.length === 0
-          ? 'Nothing ticked means Kavi won’t plan around your equipment. You can change this any time in Settings.'
-          : `${appliances.length} ticked. You can change this any time in Settings.`}
+          ? t('Nothing ticked means Kavi won’t plan around your equipment. You can change this any time in Settings.')
+          : tn(
+              appliances.length,
+              '{n} ticked. You can change this any time in Settings.',
+              '{n} ticked. You can change this any time in Settings.',
+            )}
       </AppText>
     </OnboardingShell>
   );

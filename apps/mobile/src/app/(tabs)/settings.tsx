@@ -9,6 +9,7 @@ import { KaviSwitch } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, DIETS } from '../../data/mock';
+import { comma, LANGUAGES, useLanguage, useT } from '../../i18n';
 import { LEGAL } from '../../legal/config';
 import { openUrl, resetTo, share } from '../../navigation';
 import { useApp, type PlanStatus } from '../../state/AppState';
@@ -17,30 +18,31 @@ import { radius, useTheme } from '../../theme';
 export default function Settings() {
   const c = useTheme();
   const app = useApp();
-  const dietName = DIETS.find((d) => d.id === app.diet)?.name ?? 'Everything';
+  const { t, tx } = useT();
+  const { choice, lang } = useLanguage();
+  const language = choice === 'system' ? t('Same as phone') : LANGUAGES.find((l) => l.code === lang)!.native;
+  const dietName = tx(DIETS.find((d) => d.id === app.diet)?.name ?? 'Everything');
   // Row value stays on one line: the first two names, then a count of the rest.
-  const kitchen = app.appliances.map(applianceName);
-  const kitchenSummary =
-    kitchen.length === 0 ? 'None' : kitchen.length <= 2 ? kitchen.join(', ') : `${kitchen.slice(0, 2).join(', ')} +${kitchen.length - 2}`;
-
-  const likesSummary =
-    app.likes.length === 0 ? 'None yet' : app.likes.length <= 2 ? app.likes.join(', ') : `${app.likes.slice(0, 2).join(', ')} +${app.likes.length - 2}`;
+  const summary = (names: string[], none: string) =>
+    names.length === 0 ? none : names.length <= 2 ? names.join(comma()) : `${names.slice(0, 2).join(comma())} +${names.length - 2}`;
+  const kitchenSummary = summary(app.appliances.map((a) => tx(applianceName(a))), t('None'));
+  const likesSummary = summary(app.likes.map(tx), t('None yet'));
 
   const confirmDelete = () =>
     Alert.alert(
-      'Delete your account?',
-      'This removes your household, plans, and grocery lists. You can’t undo this.',
+      t('Delete your account?'),
+      t('This removes your household, plans, and grocery lists. You can’t undo this.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete Account',
+          text: t('Delete Account'),
           style: 'destructive',
           onPress: async () => {
             try {
               await app.deleteAccount();
               resetTo('/welcome');
             } catch (e) {
-              Alert.alert('Couldn’t delete your account', (e as Error).message);
+              Alert.alert(t('Couldn’t delete your account'), (e as Error).message);
             }
           },
         },
@@ -48,7 +50,7 @@ export default function Settings() {
     );
 
   return (
-    <TabScreen tab="settings" header={<AppText variant="largeTitle" accessibilityRole="header">Settings</AppText>}>
+    <TabScreen tab="settings" header={<AppText variant="largeTitle" accessibilityRole="header">{t('Settings')}</AppText>}>
       <Pressable
         accessibilityRole={app.subscribed ? 'summary' : 'button'}
         disabled={app.subscribed}
@@ -57,70 +59,77 @@ export default function Settings() {
       >
         <Mascot pose={app.subscribed ? 'cheer' : 'sleep'} size={64} decorative style={styles.planPip} />
         <View style={styles.flex}>
-          <AppText variant="headline">{app.subscribed ? 'Kavi Plus' : 'Free Plan'}</AppText>
+          <AppText variant="headline">{app.subscribed ? 'Kavi Plus' : t('Free Plan')}</AppText>
           <AppText variant="subhead">
-            {app.subscribed ? 'A new plan every week' : '1 of 1 plans used this month'}
+            {app.subscribed ? t('A new plan every week') : t('1 of 1 plans used this month')}
           </AppText>
         </View>
         {app.subscribed ? null : (
-          <AppText variant="subhead" weight="600" color={c.primaryText}>Get Kavi Plus</AppText>
+          <AppText variant="subhead" weight="600" color={c.primaryText}>{t('Get Kavi Plus')}</AppText>
         )}
       </Pressable>
 
-      <Section title="Household">
-        <LinkRow label="People eating" value={String(app.people)} href="/onboarding/household?edit=1" first />
-        <LinkRow label="Weekly budget" value={`$${app.budget}`} href="/onboarding/household?edit=1" />
-        <LinkRow label="Diet" value={dietName} href="/onboarding/diet?edit=1" />
-        <LinkRow label="Allergies" value={app.allergies.join(', ') || 'None'} href="/onboarding/household?edit=1" />
-        <LinkRow label="Dislikes" value={app.dislikes.join(', ') || 'None'} href="/onboarding/household?edit=1" />
-        <LinkRow label="Foods you like" value={likesSummary} href="/onboarding/household?edit=1" />
-        <LinkRow label="Kitchen" value={kitchenSummary} href="/onboarding/kitchen?edit=1" />
+      <Section title={t('Household')}>
+        <LinkRow label={t('People eating')} value={String(app.people)} href="/onboarding/household?edit=1" first />
+        <LinkRow label={t('Weekly budget')} value={`$${app.budget}`} href="/onboarding/household?edit=1" />
+        <LinkRow label={t('Diet')} value={dietName} href="/onboarding/diet?edit=1" />
+        <LinkRow label={t('Allergies')} value={app.allergies.map(tx).join(comma()) || t('None')} href="/onboarding/household?edit=1" />
+        <LinkRow label={t('Dislikes')} value={app.dislikes.map(tx).join(comma()) || t('None')} href="/onboarding/household?edit=1" />
+        <LinkRow label={t('Foods you like')} value={likesSummary} href="/onboarding/household?edit=1" />
+        <LinkRow label={t('Kitchen')} value={kitchenSummary} href="/onboarding/kitchen?edit=1" />
       </Section>
 
-      <Section title="Shared list" footer="People you invite see the grocery list and can check items off.">
-        <StaticRow label="Members" value="Only you" first />
+      <Section title={t('Language')} footer={t('Recipes, ingredients, and your grocery list switch too.')}>
+        <LinkRow label={t('App language')} value={language} href="/language" first />
+      </Section>
+
+      <Section title={t('Shared list')} footer={t('People you invite see the grocery list and can check items off.')}>
+        <StaticRow label={t('Members')} value={t('Only you')} first />
         <ActionRow
-          label="Invite Someone"
-          onPress={() => share('Join my Kavi household to share our grocery list: https://usekavi.com')}
+          label={t('Invite Someone')}
+          onPress={() => share(t('Join my Kavi household to share our grocery list: {url}', { url: 'https://usekavi.com' }))}
         />
       </Section>
 
-      <Section title="Notifications">
+      <Section title={t('Notifications')}>
         <SwitchRow
-          label="Sunday plan reminder"
-          detail="Sundays at 5 PM"
+          label={t('Sunday plan reminder')}
+          detail={t('Sundays at 5 PM')}
           value={app.remindSunday}
           onChange={app.setRemindSunday}
           first
         />
         <SwitchRow
-          label="Grocery list changes"
-          detail="When someone checks off or adds items"
+          label={t('Grocery list changes')}
+          detail={t('When someone checks off or adds items')}
           value={app.notifyListChanges}
           onChange={app.setNotifyListChanges}
         />
       </Section>
 
       <Section
-        title="Account"
-        footer="Deleting your account removes your household, plans, and lists. Subscriptions are managed in your App Store or Google Play settings."
+        title={t('Account')}
+        footer={t('Deleting your account removes your household, plans, and lists. Subscriptions are managed in your App Store or Google Play settings.')}
       >
-        <StaticRow label="Account" value={app.live ? (app.email ?? 'Signed in') : 'Example data, not saved'} first />
-        <ActionRow label="Restore Purchases" onPress={() => Alert.alert('No purchases found', 'There’s nothing to restore on this account.')} />
+        <StaticRow label={t('Account')} value={app.live ? (app.email ?? t('Signed in')) : t('Example data, not saved')} first />
         <ActionRow
-          label="Sign Out"
+          label={t('Restore Purchases')}
+          onPress={() => Alert.alert(t('No purchases found'), t('There’s nothing to restore on this account.'))}
+        />
+        <ActionRow
+          label={t('Sign Out')}
           onPress={() => {
             app.signOut().finally(() => resetTo('/welcome'));
           }}
         />
-        <ActionRow label="Delete Account" danger onPress={confirmDelete} />
+        <ActionRow label={t('Delete Account')} danger onPress={confirmDelete} />
       </Section>
 
-      <Section title="About">
-        <ActionRow label="Terms of Service" onPress={() => router.push('/legal/terms')} first chevron />
-        <ActionRow label="Privacy Policy" onPress={() => router.push('/legal/privacy')} chevron />
-        <ActionRow label="Contact Us" onPress={() => openUrl(`mailto:${LEGAL.email}`)} chevron />
-        <StaticRow label="Version" value="1.0.0" />
+      <Section title={t('About')}>
+        <ActionRow label={t('Terms of Service')} onPress={() => router.push('/legal/terms')} first chevron />
+        <ActionRow label={t('Privacy Policy')} onPress={() => router.push('/legal/privacy')} chevron />
+        <ActionRow label={t('Contact Us')} onPress={() => openUrl(`mailto:${LEGAL.email}`)} chevron />
+        <StaticRow label={t('Version')} value="1.0.0" />
       </Section>
 
       {__DEV__ ? <DevStates /> : null}

@@ -2,17 +2,19 @@ import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
+import { useT } from '../i18n';
 import { backOr } from '../navigation';
 import { haptic, reduceMotion } from '../motion';
 import { radius, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { IconButton } from './Buttons';
 
+// Labels are translated in StepHeader, in this order.
 const TABS = [
-  { label: 'Diet', path: '/onboarding/diet' },
-  { label: 'Household', path: '/onboarding/household' },
-  { label: 'Kitchen', path: '/onboarding/kitchen' },
-  { label: 'Save', path: '/onboarding/save' },
+  { path: '/onboarding/diet' },
+  { path: '/onboarding/household' },
+  { path: '/onboarding/kitchen' },
+  { path: '/onboarding/save' },
 ] as const;
 
 // The tab the person just left. Each question is its own screen, so the new screen reads this on mount
@@ -30,6 +32,8 @@ export function goToStep(from: number, to: number, edit?: string) {
 export function StepHeader({ step, backLabel }: { step: 1 | 2 | 3 | 4; backLabel: string }) {
   const c = useTheme();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const { t } = useT();
+  const labels = [t('Diet'), t('Household'), t('Kitchen'), t('Save')];
   const [width, setWidth] = useState(0);
   const tabWidth = width / TABS.length;
 
@@ -65,11 +69,12 @@ export function StepHeader({ step, backLabel }: { step: 1 | 2 | 3 | 4; backLabel
         {TABS.map((tab, i) => {
           const n = i + 1;
           const active = n === step;
+          const label = labels[i];
           return (
             <Pressable
-              key={tab.label}
+              key={tab.path}
               accessibilityRole="tab"
-              accessibilityLabel={`${tab.label}, step ${n} of 4`}
+              accessibilityLabel={t('{label}, step {n} of 4', { label, n })}
               accessibilityState={{ selected: active }}
               onPress={() => {
                 if (active) return;
@@ -84,7 +89,7 @@ export function StepHeader({ step, backLabel }: { step: 1 | 2 | 3 | 4; backLabel
                 weight={active ? '600' : '500'}
                 style={{ fontSize: 15 }}
               >
-                {tab.label}
+                {label}
               </AppText>
             </Pressable>
           );

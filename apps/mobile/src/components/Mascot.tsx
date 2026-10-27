@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, useColorScheme, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
+import { useT, type Translator } from '../i18n';
 import { haptic, reduceMotion } from '../motion';
 import { MASCOT_POSES, type MascotPose } from './mascotPoses.generated';
 import type { MascotAnim, MascotLayer, MascotPoseSpec } from './mascotTypes';
@@ -15,6 +16,23 @@ const PALETTE = {
   dark: { INK: '#E8F1EB', G: '#5CC99A', TINT: '#2C4A3A', GLASS: '#1F3328', BLUSH: '#C97F70', W: '#17231C' },
 } as const;
 type Colors = (typeof PALETTE)['light' | 'dark'];
+
+// What a screen reader hears when a screen passes no `label`: Pip's name and the pose, as one translated phrase.
+const poseLabels = (t: Translator['t']): Record<MascotPose, string> => ({
+  wave: t('Pip, waving'),
+  think: t('Pip, thinking'),
+  cook: t('Pip, cooking'),
+  shop: t('Pip, shopping'),
+  cheer: t('Pip, cheering'),
+  oops: t('Pip, oops'),
+  sleep: t('Pip, napping'),
+  peek: t('Pip, peeking'),
+  love: t('Pip, loving it'),
+  yum: t('Pip, yum'),
+  save: t('Pip, saving'),
+  point: t('Pip, pointing'),
+  read: t('Pip, reading'),
+});
 
 // Pip, Kavi's mason jar. One pose per moment: pick the one that matches what the screen is saying.
 // Each pose has its own idle loop (a wave, a hop, steam, blinking); Reduce Motion or animate={false} shows it still.
@@ -38,6 +56,7 @@ export function Mascot({
   style?: StyleProp<ViewStyle>;
 }) {
   const spec: MascotPoseSpec = MASCOT_POSES[pose];
+  const { t } = useT();
   const colors = PALETTE[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const on = animate && !reduceMotion();
 
@@ -73,7 +92,7 @@ export function Mascot({
     <Animated.View
       accessible={!decorative}
       accessibilityRole={decorative ? undefined : 'image'}
-      accessibilityLabel={decorative ? undefined : (label ?? `${MASCOT_NAME}, ${spec.label.toLowerCase()}`)}
+      accessibilityLabel={decorative ? undefined : (label ?? poseLabels(t)[pose])}
       accessibilityElementsHidden={decorative}
       importantForAccessibility={decorative ? 'no-hide-descendants' : 'auto'}
       pointerEvents="none"

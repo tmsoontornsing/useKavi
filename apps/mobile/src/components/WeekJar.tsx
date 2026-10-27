@@ -2,6 +2,7 @@ import { useEffect, useRef, type ComponentType } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { ClipPath, Defs, G, Path, Rect, type RectProps } from 'react-native-svg';
 
+import { useT } from '../i18n';
 import { reduceMotion } from '../motion';
 import { fonts, radius, useTheme } from '../theme';
 import { AppText } from './AppText';
@@ -23,7 +24,10 @@ const FULL = 60; // where the top of a full jar sits
 // Loops while on screen. Reduce Motion shows the finished week.
 export function WeekJar({ title, days, budget, label }: { title: string; days: Day[]; budget: number; label: string }) {
   const c = useTheme();
+  const { t, tx } = useT();
   const total = days.reduce((sum, d) => sum + d.cost, 0);
+  // The total is drawn larger, so the phrase is split where it goes.
+  const [before, after = ''] = t('{total} of ${budget}', { budget }).split('{total}');
   const still = reduceMotion();
 
   const level = useRef(new Animated.Value(still ? total / budget : 0)).current;
@@ -88,18 +92,21 @@ export function WeekJar({ title, days, budget, label }: { title: string; days: D
                 { opacity: rows[i], transform: [{ translateX: rows[i].interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }] },
               ]}
             >
-              <AppText variant="subhead" color={c.muted} numberOfLines={1} style={styles.day}>{d.day}</AppText>
-              <AppText variant="subhead" color={c.text} numberOfLines={1} style={styles.meal}>{d.meal}</AppText>
+              <AppText variant="subhead" color={c.muted} numberOfLines={1} style={styles.day}>{tx(d.day)}</AppText>
+              <AppText variant="subhead" color={c.text} numberOfLines={1} style={styles.meal}>{tx(d.meal)}</AppText>
               <AppText variant="subhead" color={c.text} style={styles.num}>{`$${d.cost}`}</AppText>
             </Animated.View>
           ))}
         </View>
       </View>
       <Animated.View style={[styles.summary, { opacity: summary }]}>
+        {before.trim() ? <AppText variant="subhead" color={c.text}>{before}</AppText> : null}
         <AppText style={styles.money} color={c.text}>{`$${total}`}</AppText>
         <AppText variant="subhead" color={c.text}>
-          {` of $${budget} · `}
-          <AppText variant="subhead" color={c.primaryText} weight="500">{`$${budget - total} to spare`}</AppText>
+          {`${after} · `}
+          <AppText variant="subhead" color={c.primaryText} weight="500">
+            {t('${amount} to spare', { amount: budget - total })}
+          </AppText>
         </AppText>
       </Animated.View>
     </View>

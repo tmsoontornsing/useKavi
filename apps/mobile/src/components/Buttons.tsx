@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { useT } from '../i18n';
 import { haptic, PressableScale } from '../motion';
 import { fonts, radius, useTheme } from '../theme';
 import { AppText } from './AppText';
@@ -51,6 +52,7 @@ export function ProviderButton({
   disabled?: boolean;
 }) {
   const c = useTheme();
+  const { t } = useT();
   const apple = provider === 'apple';
   const dark = useColorScheme() === 'dark';
   const bg = apple ? (dark ? '#FFFFFF' : '#000000') : c.card;
@@ -73,7 +75,7 @@ export function ProviderButton({
     >
       <Ionicons name={apple ? 'logo-apple' : 'logo-google'} size={20} color={fg} />
       <AppText style={{ fontFamily: fonts.displaySemi, fontSize: 17 }} color={fg}>
-        {apple ? 'Continue with Apple' : 'Continue with Google'}
+        {apple ? t('Continue with Apple') : t('Continue with Google')}
       </AppText>
     </PressableScale>
   );

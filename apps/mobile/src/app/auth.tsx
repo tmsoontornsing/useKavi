@@ -7,6 +7,7 @@ import { AppText } from '../components/AppText';
 import { IconButton, ProviderButton, TextButton } from '../components/Buttons';
 import { EmailAuthForm } from '../components/EmailAuthForm';
 import { Mascot } from '../components/Mascot';
+import { useT } from '../i18n';
 import { animateLayout } from '../motion';
 import { modalEdges, resetTo } from '../navigation';
 import { useApp } from '../state/AppState';
@@ -17,6 +18,7 @@ export default function Auth() {
   const c = useTheme();
   const app = useApp();
   const { from } = useLocalSearchParams<{ from?: string }>();
+  const { t } = useT();
 
   const [emailOpen, setEmailOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -61,17 +63,17 @@ export default function Auth() {
   return (
     <SafeAreaView edges={modalEdges} style={[styles.root, { backgroundColor: c.bg }]}>
       <View style={styles.top}>
-        <IconButton icon="close" label="Close, sign in later" onPress={() => router.back()} />
+        <IconButton icon="close" label={t('Close, sign in later')} onPress={() => router.back()} />
       </View>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Mascot pose="save" size={emailOpen ? 84 : 120} tappable label="Pip, Kavi's jar, holding a coin" />
+          <Mascot pose="save" size={emailOpen ? 84 : 120} tappable label={t('Pip, Kavi\'s jar, holding a coin')} />
           <View style={styles.copy}>
             <AppText variant="largeTitle" accessibilityRole="header" style={styles.center}>
-              Save Your Plan
+              {t('Save Your Plan')}
             </AppText>
             <AppText color={c.muted} style={styles.center}>
-              Sign in with Apple, Google, or your email so your household settings are saved and your grocery list can be shared.
+              {t('Sign in with Apple, Google, or your email so your household settings are saved and your grocery list can be shared.')}
             </AppText>
           </View>
 
@@ -82,7 +84,7 @@ export default function Auth() {
               <>
                 <ProviderButton provider="apple" disabled={busy} onPress={() => withProvider('apple')} />
                 <ProviderButton provider="google" disabled={busy} onPress={() => withProvider('google')} />
-                <TextButton label="Use email instead" onPress={() => toggleEmail(true)} />
+                <TextButton label={t('Use email instead')} onPress={() => toggleEmail(true)} />
               </>
             )}
             {error ? (
@@ -93,15 +95,22 @@ export default function Auth() {
           </View>
 
           <AppText variant="footnote" style={styles.center}>
-            {'By continuing, you agree to the '}
-            <AppText variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
-              Terms of Service
-            </AppText>
-            {' and acknowledge the '}
-            <AppText variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
-              Privacy Policy
-            </AppText>
-            . Kavi uses your account only to save your settings and sync your list.
+            {/* One sentence with the two links as placeholders, so each language can put them where its grammar needs. */}
+            {t('By continuing, you agree to the {terms} and acknowledge the {privacy}. Kavi uses your account only to save your settings and sync your list.')
+              .split(/(\{terms\}|\{privacy\})/)
+              .map((part, i) =>
+                part === '{terms}' ? (
+                  <AppText key={i} variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
+                    {t('Terms of Service')}
+                  </AppText>
+                ) : part === '{privacy}' ? (
+                  <AppText key={i} variant="footnote" weight="600" color={c.primaryText} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
+                    {t('Privacy Policy')}
+                  </AppText>
+                ) : (
+                  part
+                ),
+              )}
           </AppText>
         </ScrollView>
       </KeyboardAvoidingView>

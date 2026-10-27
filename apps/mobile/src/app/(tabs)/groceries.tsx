@@ -9,6 +9,7 @@ import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
+import { comma, useT } from '../../i18n';
 import { animateLayout, haptic, PressableScale, reduceMotion, Reveal, useCountUp } from '../../motion';
 import { remindersAvailable, sendToReminders } from '../../lib/reminders';
 import { share as shareText } from '../../navigation';
@@ -37,6 +38,7 @@ function Chevron({ open }: { open: boolean }) {
 
 export default function Groceries() {
   const c = useTheme();
+  const { t, tn, tx, line } = useT();
   const { checked, toggleChecked, groceries, groceryTotal, pantrySavings, pantry } = useApp();
   const [open, setOpen] = useState<Record<string, boolean>>({ Produce: true });
 
@@ -44,8 +46,10 @@ export default function Groceries() {
   const done = all.filter((i) => checked[i.key]).length;
   const total = useCountUp(groceryTotal);
   // A short, readable summary of the shelf: the first few items, then "and more".
-  const shelf = pantry.flatMap((s) => s.items).map((i) => i.toLowerCase());
-  const shelfText = shelf.length <= 3 ? shelf.join(', ') : `${shelf.slice(0, 3).join(', ')}, and more`;
+  const shelf = pantry.flatMap((s) => s.items).map((i) => tx(i).toLowerCase());
+  const shelfText = shelf.length <= 3 ? shelf.join(comma()) : t('{items}, and more', { items: shelf.slice(0, 3).join(comma()) });
+  // The savings figure is bold inside its sentence, so the translated sentence is split around it.
+  const [savesBefore, savesAfter = ''] = t('That saves about {amount} this week.').split('{amount}');
 
   // Puts the unchecked items into the Kavi Groceries list in Apple Reminders.
   const [sending, setSending] = useState(false);
@@ -56,27 +60,30 @@ export default function Groceries() {
       const r = await sendToReminders(groceries, checked);
       if (r.status === 'denied') {
         Alert.alert(
-          'Kavi can’t reach Reminders',
+          t('Kavi can’t reach Reminders'),
           r.canAskAgain
-            ? 'Allow Reminders access to send your list there.'
-            : 'Turn on Reminders for Kavi in Settings, then try again.',
+            ? t('Allow Reminders access to send your list there.')
+            : t('Turn on Reminders for Kavi in Settings, then try again.'),
           r.canAskAgain
-            ? [{ text: 'OK' }]
-            : [{ text: 'Not Now', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings() }],
+            ? [{ text: t('OK') }]
+            : [{ text: t('Not Now'), style: 'cancel' }, { text: t('Open Settings'), onPress: () => Linking.openSettings() }],
         );
       } else if (r.status === 'nothing') {
-        Alert.alert('Nothing to send', 'Every item on your list is already in your cart.');
+        Alert.alert(t('Nothing to send'), t('Every item on your list is already in your cart.'));
       } else {
         haptic.success();
         Alert.alert(
-          r.added > 0 ? `Added ${r.added} ${r.added === 1 ? 'item' : 'items'} to Reminders` : 'Already in Reminders',
-          (r.added > 0 ? 'They are in a list called Kavi Groceries.' : 'Everything on your list is in Kavi Groceries.') +
-            (r.added > 0 && r.alreadyThere > 0 ? ` ${r.alreadyThere} were already there.` : ''),
-          [{ text: 'Done', style: 'cancel' }, { text: 'Open Reminders', onPress: () => Linking.openURL('x-apple-reminderkit://').catch(() => {}) }],
+          r.added > 0 ? tn(r.added, 'Added {n} item to Reminders', 'Added {n} items to Reminders') : t('Already in Reminders'),
+          r.added === 0
+            ? t('Everything on your list is in Kavi Groceries.')
+            : r.alreadyThere > 0
+              ? t('They are in a list called Kavi Groceries. {n} were already there.', { n: r.alreadyThere })
+              : t('They are in a list called Kavi Groceries.'),
+          [{ text: t('Done'), style: 'cancel' }, { text: t('Open Reminders'), onPress: () => Linking.openURL('x-apple-reminderkit://').catch(() => {}) }],
         );
       }
     } catch (e) {
-      Alert.alert('Couldn’t add to Reminders', (e as Error).message);
+      Alert.alert(t('Couldn’t add to Reminders'), (e as Error).message);
     } finally {
       setSending(false);
     }
@@ -84,27 +91,27 @@ export default function Groceries() {
 
   const share = () => {
     const text = groceries.map(
-      (a) => `${a.name}\n${a.items.map((i) => `${checked[i.key] ? '✓' : '•'} ${i.name}`).join('\n')}`,
+      (a) => `${tx(a.name)}\n${a.items.map((i) => `${checked[i.key] ? '✓' : '•'} ${line(i.name)}`).join('\n')}`,
     ).join('\n\n');
-    shareText(`Kavi grocery list\n\n${text}`);
+    shareText(`${t('Kavi grocery list')}\n\n${text}`);
   };
 
   // The total sits in the header because the floating iOS tab bar would cover a pinned footer.
   const header = (
     <>
       <View style={styles.headRow}>
-        <AppText variant="largeTitle" accessibilityRole="header" style={styles.flex}>Grocery List</AppText>
+        <AppText variant="largeTitle" accessibilityRole="header" style={styles.flex}>{t('Grocery List')}</AppText>
         {remindersAvailable ? (
-          <IconButton icon="checkbox-outline" label="Add list to Reminders" onPress={toReminders} />
+          <IconButton icon="checkbox-outline" label={t('Add list to Reminders')} onPress={toReminders} />
         ) : null}
-        <IconButton icon="share-outline" label="Share list with your household" onPress={share} />
+        <IconButton icon="share-outline" label={t('Share list with your household')} onPress={share} />
       </View>
       <View style={[styles.summary, { backgroundColor: c.card }]}>
         <View style={styles.flex}>
-          <AppText variant="subhead" color={c.text} style={styles.nums}>{done} of {all.length} items in your cart</AppText>
-          <AppText variant="footnote">Estimated total · US average prices</AppText>
+          <AppText variant="subhead" color={c.text} style={styles.nums}>{t('{done} of {total} items in your cart', { done, total: all.length })}</AppText>
+          <AppText variant="footnote">{t('Estimated total · US average prices')}</AppText>
           <View style={styles.cartBar}>
-            <ProgressBar value={done} max={all.length} label={`${done} of ${all.length} items in your cart`} />
+            <ProgressBar value={done} max={all.length} label={t('{done} of {total} items in your cart', { done, total: all.length })} />
           </View>
         </View>
         <AppText variant="money" style={{ fontSize: 24 }}>{money(total)}</AppText>
@@ -118,11 +125,12 @@ export default function Groceries() {
         <View style={styles.pantryRow}>
           {pantrySavings > 0 ? <Mascot pose="save" size={64} decorative tappable style={styles.savePip} /> : null}
         <AppText variant="subhead" style={[styles.pantryText, styles.flex]}>
-          {shelf.length === 0 ? 'Add what you already have in Pantry and it comes off this list.' : `On your pantry shelf: ${shelfText}.`}
+          {shelf.length === 0 ? t('Add what you already have in Pantry and it comes off this list.') : t('On your pantry shelf: {items}.', { items: shelfText })}
           {pantrySavings > 0 ? (
             <>
-              {' That saves about '}
-              <AppText variant="subhead" color={c.text} weight="700">{money(pantrySavings)}</AppText> this week.
+              {` ${savesBefore}`}
+              <AppText variant="subhead" color={c.text} weight="700">{money(pantrySavings)}</AppText>
+              {savesAfter}
             </>
           ) : null}
         </AppText>
@@ -135,8 +143,8 @@ export default function Groceries() {
           <Card style={styles.cartFull}>
             <Mascot pose="cheer" size={84} decorative tappable />
             <View style={styles.flex}>
-              <AppText variant="headline">Cart is full</AppText>
-              <AppText variant="subhead">Everything on the list is in your cart. Nice shop.</AppText>
+              <AppText variant="headline">{t('Cart is full')}</AppText>
+              <AppText variant="subhead">{t('Everything on the list is in your cart. Nice shop.')}</AppText>
             </View>
           </Card>
         </Reveal>
@@ -145,9 +153,9 @@ export default function Groceries() {
       {all.length === 0 ? (
         <Card style={styles.emptyList}>
           <Mascot pose="peek" size={120} decorative />
-          <AppText variant="headline">Your list is empty</AppText>
+          <AppText variant="headline">{t('Your list is empty')}</AppText>
           <AppText color={c.muted} style={styles.centerText}>
-            It fills in when you plan a week. Items already on your pantry shelf are left off.
+            {t('It fills in when you plan a week. Items already on your pantry shelf are left off.')}
           </AppText>
         </Card>
       ) : null}
@@ -168,7 +176,7 @@ export default function Groceries() {
               }}
               style={({ pressed }) => [styles.aisleHead, { opacity: pressed ? 0.7 : 1 }]}
             >
-              <AppText variant="headline" style={styles.flex}>{aisle.name}</AppText>
+              <AppText variant="headline" style={styles.flex}>{tx(aisle.name)}</AppText>
               <AppText variant="subhead" style={styles.nums}>{aisle.items.length} · {money(sub)}</AppText>
               <Chevron open={isOpen} />
             </PressableScale>
@@ -180,7 +188,7 @@ export default function Groceries() {
                       key={item.key}
                       background={c.card}
                       start={{
-                        label: on ? 'Undo' : 'In cart',
+                        label: on ? t('Undo') : t('In cart'),
                         icon: on ? 'arrow-undo' : 'cart',
                         background: on ? c.control : c.primary,
                         foreground: on ? c.text : c.onPrimary,
@@ -205,7 +213,7 @@ export default function Groceries() {
                         style={[styles.flex, on && styles.done]}
                         color={on ? c.muted : c.text}
                       >
-                        {item.name}
+                        {line(item.name)}
                       </AppText>
                       <AppText variant="subhead" style={styles.nums}>{money(item.price)}</AppText>
                     </PressableScale>

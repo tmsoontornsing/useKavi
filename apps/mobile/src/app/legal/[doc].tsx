@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton, TextButton } from '../../components/Buttons';
+import { useT } from '../../i18n';
 import { LEGAL } from '../../legal/config';
 import { LEGAL_DOCS, type Block } from '../../legal/documents';
 import { modalEdges, openUrl } from '../../navigation';
@@ -16,28 +17,39 @@ export default function LegalScreen() {
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const content = doc === 'privacy' ? LEGAL_DOCS.privacy : LEGAL_DOCS.terms;
   const other = content.id === 'terms' ? LEGAL_DOCS.privacy : LEGAL_DOCS.terms;
+  // The documents themselves stay in English; only the sheet around them is translated.
+  const { t, lang } = useT();
+  const isTerms = content.id === 'terms';
+  const title = isTerms ? t('Terms of Service') : t('Privacy Policy');
 
   return (
     <SafeAreaView edges={modalEdges} style={[styles.root, { backgroundColor: c.bg }]}>
       <View style={styles.top}>
-        <AppText variant="headline" style={styles.flex} accessibilityRole="header">{content.title}</AppText>
-        <IconButton icon="close" label={`Close ${content.title}`} onPress={() => router.back()} />
+        <AppText variant="headline" style={styles.flex} accessibilityRole="header">{title}</AppText>
+        <IconButton
+          icon="close"
+          label={isTerms ? t('Close Terms of Service') : t('Close Privacy Policy')}
+          onPress={() => router.back()}
+        />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
+        {lang !== 'en' ? (
+          <AppText variant="footnote" color={c.muted}>{t('This document is available in English only.')}</AppText>
+        ) : null}
         <Card style={[styles.summary, { backgroundColor: c.tint }]}>
-          <AppText variant="eyebrow" color={c.primaryText}>The short version</AppText>
+          <AppText variant="eyebrow" color={c.primaryText}>{t('The short version')}</AppText>
           <AppText color={c.text}>{content.summary}</AppText>
         </Card>
         {content.blocks.map((b, i) => (
           <BlockView key={i} block={b} />
         ))}
         <View style={styles.links}>
-          <TextButton label={`Read the ${other.title}`} onPress={() => router.setParams({ doc: other.id })} />
+          <TextButton label={isTerms ? t('Read the Privacy Policy') : t('Read the Terms of Service')} onPress={() => router.setParams({ doc: other.id })} />
           <TextButton
-            label="Open on the Web"
+            label={t('Open on the Web')}
             bold={false}
             color={c.muted}
-            onPress={() => openUrl(content.id === 'terms' ? LEGAL.termsUrl : LEGAL.privacyUrl)}
+            onPress={() => openUrl(isTerms ? LEGAL.termsUrl : LEGAL.privacyUrl)}
           />
         </View>
       </ScrollView>

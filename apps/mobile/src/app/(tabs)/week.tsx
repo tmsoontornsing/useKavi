@@ -10,6 +10,7 @@ import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
+import { comma, useT } from '../../i18n';
 import { add, labelRound, zero } from '../../lib/nutrition';
 import { Reveal, useCountUp } from '../../motion';
 import { useApp } from '../../state/AppState';
@@ -18,6 +19,7 @@ import { fonts, radius, useTheme } from '../../theme';
 export default function Week() {
   const c = useTheme();
   const app = useApp();
+  const { t, tn } = useT();
   const over = app.planTotal > app.budget;
   const ready = app.planStatus === 'ready';
 
@@ -26,8 +28,8 @@ export default function Week() {
       <View style={styles.titleRow}>
         <Image source={require('../../../assets/icon.png')} style={styles.icon} accessibilityIgnoresInvertColors />
         <View>
-          <AppText variant="largeTitle" accessibilityRole="header">This Week</AppText>
-          <AppText variant="subhead">{app.weekLabel} · {app.people} people</AppText>
+          <AppText variant="largeTitle" accessibilityRole="header">{t('This Week')}</AppText>
+          <AppText variant="subhead">{`${app.weekLabel} · ${tn(app.people, '{n} person', '{n} people')}`}</AppText>
         </View>
       </View>
       {ready ? <Reveal><BudgetCard over={over} /></Reveal> : null}
@@ -40,25 +42,31 @@ export default function Week() {
       {app.planStatus === 'empty' ? (
         <Reveal><View style={styles.centered}>
           <Mascot pose="sleep" size={150} decorative />
-          <AppText variant="title" style={styles.center} accessibilityRole="header">No meals planned yet</AppText>
+          <AppText variant="title" style={styles.center} accessibilityRole="header">{t('No meals planned yet')}</AppText>
           <AppText color={c.muted} style={styles.center}>
-            Kavi will plan breakfast, lunch, and dinner for {app.people} people that fit your ${app.budget} budget.
+            {tn(
+              app.people,
+              'Kavi will plan breakfast, lunch, and dinner for {n} person that fit your ${budget} budget.',
+              'Kavi will plan breakfast, lunch, and dinner for {n} people that fit your ${budget} budget.',
+              { budget: app.budget },
+            )}
           </AppText>
-          <PrimaryButton label="Plan This Week" onPress={app.generatePlan} />
-          <AppText variant="footnote">Free plan: 1 of 1 plans left this month</AppText>
-          <TextButton label="See What Plus Adds" onPress={() => router.push('/plus')} />
+          <PrimaryButton label={t('Plan This Week')} onPress={app.generatePlan} />
+          <AppText variant="footnote">{t('Free plan: 1 of 1 plans left this month')}</AppText>
+          <TextButton label={t('See What Plus Adds')} onPress={() => router.push('/plus')} />
         </View></Reveal>
       ) : null}
       {app.planStatus === 'error' ? (
         <Reveal><View style={styles.centered} accessibilityRole="alert">
           <Mascot pose="oops" size={150} decorative />
-          <AppText variant="title" style={styles.center} accessibilityRole="header">Couldn’t build your plan</AppText>
+          <AppText variant="title" style={styles.center} accessibilityRole="header">{t('Couldn’t build your plan')}</AppText>
           <AppText color={c.muted} style={styles.center}>
-            {app.planError ?? 'Kavi can’t reach the internet. Check your connection and try again.'} Your household settings are saved.
+            {`${app.planError ?? t('Kavi can’t reach the internet. Check your connection and try again.')} ${t('Your household settings are saved.')}`}
           </AppText>
-          <PrimaryButton label="Try Again" onPress={app.generatePlan} />
-          {app.planError?.toLowerCase().includes('free plan') ? (
-            <TextButton label="See What Plus Adds" onPress={() => router.push('/plus')} />
+          <PrimaryButton label={t('Try Again')} onPress={app.generatePlan} />
+          {/* api.ts translates its errors, so the free plan error is matched in English and in the language on screen. */}
+          {app.planError?.toLowerCase().includes('free plan') || app.planError === t('The free plan includes one plan a month.') ? (
+            <TextButton label={t('See What Plus Adds')} onPress={() => router.push('/plus')} />
           ) : null}
         </View></Reveal>
       ) : null}
@@ -82,14 +90,20 @@ const openSwap = (meal: PlannedMeal) => router.push({ pathname: '/swap/[slot]', 
 // Equipment the household lacks, as a warning line, or null when the meal is cookable.
 function useMissing(meal: PlannedMeal) {
   const { appliances } = useApp();
-  const needs = meal.appliances.filter((a) => !(appliances as string[]).includes(a));
-  return needs.length > 0 ? `Needs a ${needs.map((n) => applianceName(n).toLowerCase()).join(' and ')}` : null;
+  const { t, tx } = useT();
+  const needs = meal.appliances
+    .filter((a) => !(appliances as string[]).includes(a))
+    .map((n) => tx(applianceName(n)).toLowerCase());
+  if (needs.length === 0) return null;
+  if (needs.length === 1) return t('Needs a {item}', { item: needs[0] });
+  return t('Needs a {items} and {last}', { items: needs.slice(0, -1).join(comma()), last: needs[needs.length - 1] });
 }
 
 // One day. The day's name leads, with the day's cost and one person's nutrition. Breakfast and lunch sit side by side as
 // small tiles; dinner, the meal the day builds toward, gets the full-width row. Today's card is tinted and tagged.
 function DayCard({ meals }: { meals: PlannedMeal[] }) {
   const c = useTheme();
+  const { t, tx, locale } = useT();
   const [breakfast, lunch, dinner] = meals;
   const total = meals.reduce((sum, m) => sum + m.cost, 0);
   // One person's day, shown only when every meal has nutrition data, so a partial total never looks complete.
@@ -100,20 +114,24 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
     <Card style={styles.dayCard}>
       <View style={[styles.dayHead, isToday && { backgroundColor: c.tint }]}>
         <View style={styles.dayTitle}>
-          <AppText style={styles.dayName} accessibilityRole="header">{breakfast.dayLong}</AppText>
+          <AppText style={styles.dayName} accessibilityRole="header">{tx(breakfast.dayLong)}</AppText>
           {isToday ? (
             <View style={[styles.todayTag, { backgroundColor: c.primary }]}>
-              <AppText variant="footnote" weight="700" color={c.onPrimary}>TODAY</AppText>
+              <AppText variant="footnote" weight="700" color={c.onPrimary}>{t('TODAY')}</AppText>
             </View>
           ) : null}
         </View>
         <View style={styles.dayCost}>
           <AppText variant="money">{`$${total}`}</AppText>
-          <AppText variant="footnote">est.</AppText>
+          <AppText variant="footnote">{t('est.')}</AppText>
         </View>
         {day ? (
           <AppText variant="footnote" style={styles.dayNutrition}>
-            {`Per person ${labelRound('kcal', day.kcal).toLocaleString('en-US')} cal · ${labelRound('protein_g', day.protein_g)} g protein · ${labelRound('sodium_mg', day.sodium_mg).toLocaleString('en-US')} mg sodium`}
+            {t('Per person {kcal} cal · {protein} g protein · {sodium} mg sodium', {
+              kcal: labelRound('kcal', day.kcal).toLocaleString(locale),
+              protein: labelRound('protein_g', day.protein_g),
+              sodium: labelRound('sodium_mg', day.sodium_mg).toLocaleString(locale),
+            })}
           </AppText>
         ) : null}
       </View>
@@ -125,8 +143,8 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
 
       <SwipeRow
         background={c.card}
-        start={{ label: 'Recipe', icon: 'book-outline', background: c.tint, foreground: c.primaryText, onTrigger: () => openRecipe(dinner) }}
-        end={{ label: 'Swap', icon: 'swap-horizontal', background: c.primary, foreground: c.onPrimary, onTrigger: () => openSwap(dinner) }}
+        start={{ label: t('Recipe'), icon: 'book-outline', background: c.tint, foreground: c.primaryText, onTrigger: () => openRecipe(dinner) }}
+        end={{ label: t('Swap'), icon: 'swap-horizontal', background: c.primary, foreground: c.onPrimary, onTrigger: () => openSwap(dinner) }}
       >
         <DinnerRow meal={dinner} />
       </SwipeRow>
@@ -137,23 +155,28 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
 // Breakfast or lunch as a compact tile: the dish, a time and calorie line, its cost, and a swap button.
 function MealTile({ meal }: { meal: PlannedMeal }) {
   const c = useTheme();
+  const { t, tx, minutes } = useT();
   const missing = useMissing(meal);
+  const type = tx(MEAL_LABELS[meal.type]);
+  const name = tx(meal.name);
   return (
     <View style={[styles.tile, { backgroundColor: c.bg }]}>
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`${MEAL_LABELS[meal.type]}: ${meal.name}`}
-        accessibilityHint="Opens the recipe"
+        accessibilityLabel={t('{meal}: {name}', { meal: type, name })}
+        accessibilityHint={t('Opens the recipe')}
         onPress={() => openRecipe(meal)}
         style={({ pressed }) => [styles.tileBody, { opacity: pressed ? 0.6 : 1 }]}
       >
         <View style={styles.label}>
           <Ionicons name={MEAL_ICON[meal.type]} size={14} color={c.primaryText} />
-          <AppText variant="eyebrow" color={c.primaryText}>{MEAL_LABELS[meal.type]}</AppText>
+          <AppText variant="eyebrow" color={c.primaryText}>{type}</AppText>
         </View>
-        <AppText variant="headline" numberOfLines={3} style={styles.tileName}>{meal.name}</AppText>
+        <AppText variant="headline" numberOfLines={3} style={styles.tileName}>{name}</AppText>
         <AppText variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
-          {meal.nutrition ? `${meal.minutes} · ${labelRound('kcal', meal.nutrition.kcal)} cal` : meal.minutes}
+          {meal.nutrition
+            ? t('{time} · {kcal} cal', { time: minutes(meal.minutes), kcal: labelRound('kcal', meal.nutrition.kcal) })
+            : minutes(meal.minutes)}
         </AppText>
         {missing ? <AppText variant="footnote" weight="600" color={c.warn}>{missing}</AppText> : null}
       </Pressable>
@@ -161,7 +184,7 @@ function MealTile({ meal }: { meal: PlannedMeal }) {
         <AppText variant="money" style={styles.tileCost}>{`$${meal.cost}`}</AppText>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Swap ${meal.dayLong} ${MEAL_LABELS[meal.type].toLowerCase()}: ${meal.name}`}
+          accessibilityLabel={t('Swap {day} {meal}: {name}', { day: tx(meal.dayLong), meal: type.toLowerCase(), name })}
           hitSlop={10}
           onPress={() => openSwap(meal)}
           style={({ pressed }) => [styles.tileSwap, { opacity: pressed ? 0.5 : 1 }]}
@@ -176,27 +199,32 @@ function MealTile({ meal }: { meal: PlannedMeal }) {
 // Dinner: the day's main meal, in the display face and full width.
 function DinnerRow({ meal }: { meal: PlannedMeal }) {
   const c = useTheme();
+  const { t, tx, minutes } = useT();
   const missing = useMissing(meal);
+  const type = tx(MEAL_LABELS[meal.type]);
+  const name = tx(meal.name);
   return (
     <View style={styles.dinner}>
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`${MEAL_LABELS[meal.type]}: ${meal.name}`}
-        accessibilityHint="Opens the recipe"
+        accessibilityLabel={t('{meal}: {name}', { meal: type, name })}
+        accessibilityHint={t('Opens the recipe')}
         onPress={() => openRecipe(meal)}
         style={({ pressed }) => [styles.dinnerText, { opacity: pressed ? 0.6 : 1 }]}
       >
         <View style={styles.label}>
           <Ionicons name={MEAL_ICON[meal.type]} size={14} color={c.primaryText} />
-          <AppText variant="eyebrow" color={c.primaryText}>{MEAL_LABELS[meal.type]}</AppText>
+          <AppText variant="eyebrow" color={c.primaryText}>{type}</AppText>
         </View>
-        <AppText style={styles.dinnerName}>{meal.name}</AppText>
+        <AppText style={styles.dinnerName}>{name}</AppText>
         <View style={styles.metaRow}>
           <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'] }}>
-            {meal.nutrition ? `${meal.minutes} · ${labelRound('kcal', meal.nutrition.kcal)} cal` : meal.minutes}
+            {meal.nutrition
+            ? t('{time} · {kcal} cal', { time: minutes(meal.minutes), kcal: labelRound('kcal', meal.nutrition.kcal) })
+            : minutes(meal.minutes)}
           </AppText>
           <AppText variant="subhead" color={c.muted}>·</AppText>
-          <AppText variant="subhead" weight="600" color={c.primaryText}>Recipe</AppText>
+          <AppText variant="subhead" weight="600" color={c.primaryText}>{t('Recipe')}</AppText>
           <Ionicons name="chevron-forward" size={13} color={c.primaryText} />
         </View>
         {missing ? <AppText variant="footnote" weight="600" color={c.warn}>{missing}</AppText> : null}
@@ -205,7 +233,7 @@ function DinnerRow({ meal }: { meal: PlannedMeal }) {
         <AppText variant="money" style={styles.dinnerCost}>{`$${meal.cost}`}</AppText>
         <IconButton
           icon="swap-horizontal"
-          label={`Swap ${meal.dayLong} ${MEAL_LABELS[meal.type].toLowerCase()}: ${meal.name}`}
+          label={t('Swap {day} {meal}: {name}', { day: tx(meal.dayLong), meal: type.toLowerCase(), name })}
           onPress={() => openSwap(meal)}
         />
       </View>
@@ -216,33 +244,37 @@ function DinnerRow({ meal }: { meal: PlannedMeal }) {
 function BudgetCard({ over }: { over: boolean }) {
   const c = useTheme();
   const { planTotal, budget } = useApp();
+  const { t } = useT();
   const left = budget - planTotal;
   const shownTotal = Math.round(useCountUp(planTotal));
+  // The total is drawn larger, so the sentence is split where it goes.
+  const [before, after = ''] = t('{total} of ${budget} · est.', { budget }).split('{total}');
   return (
     <Card style={styles.budget}>
       <View style={styles.budgetHead}>
-        <AppText variant="eyebrow">Budget</AppText>
+        <AppText variant="eyebrow">{t('Budget')}</AppText>
         <AppText style={{ fontVariant: ['tabular-nums'] }}>
+          {before}
           <AppText variant="money" style={{ fontSize: 24 }} color={over ? c.warn : c.text}>${shownTotal}</AppText>
-          {` of $${budget} · est.`}
+          {after}
         </AppText>
       </View>
       <ProgressBar
         value={planTotal}
         max={budget}
         color={over ? c.warn : c.primary}
-        label={`Estimated $${planTotal} of $${budget} budget`}
+        label={t('Estimated ${total} of ${budget} budget', { total: planTotal, budget })}
       />
       {over ? (
         <View style={[styles.warning, { backgroundColor: c.warnBg }]}>
           <Ionicons name="warning-outline" size={18} color={c.warn} />
           <AppText variant="subhead" color={c.warn} weight="500" style={styles.flex}>
-            ${-left} over budget. Swap a meal to get back under.
+            {t('${amount} over budget. Swap a meal to get back under.', { amount: -left })}
           </AppText>
         </View>
       ) : (
         <View style={styles.underRow}>
-          <AppText variant="subhead" color={c.primaryText} weight="500" style={styles.flex}>${left} left this week</AppText>
+          <AppText variant="subhead" color={c.primaryText} weight="500" style={styles.flex}>{t('${amount} left this week', { amount: left })}</AppText>
           <Mascot pose="cheer" size={64} decorative style={styles.cheer} />
         </View>
       )}
@@ -252,6 +284,7 @@ function BudgetCard({ over }: { over: boolean }) {
 
 function LoadingState() {
   const c = useTheme();
+  const { t } = useT();
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -274,10 +307,10 @@ function LoadingState() {
   }, [pulse]);
 
   return (
-    <View accessibilityRole="progressbar" accessibilityLabel="Building your plan" style={styles.loading}>
+    <View accessibilityRole="progressbar" accessibilityLabel={t('Building your plan')} style={styles.loading}>
       <View style={styles.cooking}>
         <Mascot pose="cook" size={130} decorative />
-        <AppText variant="subhead" style={styles.center}>Pip is building your plan from 300 recipes…</AppText>
+        <AppText variant="subhead" style={styles.center}>{t('Pip is building your plan from 300 recipes…')}</AppText>
       </View>
       {['70%', '55%', '80%', '62%', '74%', '58%'].map((w) => (
         <Animated.View key={w} style={[styles.skeleton, { backgroundColor: c.card, opacity: pulse }]}>

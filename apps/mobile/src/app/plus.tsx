@@ -9,6 +9,7 @@ import { Card, IconButton, PrimaryButton } from '../components/Buttons';
 import { CheckCircle, ProgressBar } from '../components/Controls';
 import { Mascot, type MascotPose } from '../components/Mascot';
 import { PLANS } from '../data/mock';
+import { useT } from '../i18n';
 import { haptic, PressableScale, reduceMotion, Reveal, useCountUp } from '../motion';
 import { backOr } from '../navigation';
 import { useApp } from '../state/AppState';
@@ -16,43 +17,44 @@ import { fonts, radius, space, useTheme } from '../theme';
 
 const annual = PLANS.find((p) => p.id === 'annual')!;
 
-// What stays free, kept short so it reads at a glance.
-const KEEPS = [
-  'Meals inside your budget',
-  'Diet and allergy filters',
-  'Foods you like',
-  'Kitchen-aware recipes',
-  'Nutrition on every recipe',
-  'A list that skips your pantry',
-];
-
 // The Free plan's door to Plus. Each benefit shows itself working instead of describing it: the weeks fill in, a swap
 // moves the budget, a shared list ticks over. Opens from Settings and from a spent free plan.
 export default function Plus() {
   const c = useTheme();
   const app = useApp();
+  const { t, tx } = useT();
+
+  // What stays free, kept short so it reads at a glance.
+  const keeps = [
+    t('Meals inside your budget'),
+    t('Diet and allergy filters'),
+    t('Foods you like'),
+    t('Kitchen-aware recipes'),
+    t('Nutrition on every recipe'),
+    t('A list that skips your pantry'),
+  ];
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={styles.bar}>
-        <IconButton icon="chevron-back" label="Back to Settings" tone="card" onPress={() => backOr('/settings')} />
+        <IconButton icon="chevron-back" label={t('Back to Settings')} tone="card" onPress={() => backOr('/settings')} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Reveal>
           <View style={styles.hero}>
-            <Mascot pose="cheer" size={124} tappable label="Pip, Kavi's jar, cheering" style={styles.pip} />
+            <Mascot pose="cheer" size={124} tappable label={t('Pip, Kavi\'s jar, cheering')} style={styles.pip} />
             <View style={styles.heroText}>
               <AppText variant="eyebrow" color={c.primaryText}>Kavi Plus</AppText>
               <AppText style={styles.headline} accessibilityRole="header">
-                {app.subscribed ? 'You have everything.' : 'A plan for every week.'}
+                {app.subscribed ? t('You have everything.') : t('A plan for every week.')}
               </AppText>
             </View>
           </View>
           <AppText color={c.muted} style={styles.lede}>
             {app.subscribed
-              ? 'Thanks for supporting Kavi. Here is what your plan includes.'
-              : 'Free gives you one plan a month. Plus gives you the next week whenever you are ready.'}
+              ? t('Thanks for supporting Kavi. Here is what your plan includes.')
+              : t('Free gives you one plan a month. Plus gives you the next week whenever you are ready.')}
           </AppText>
         </Reveal>
 
@@ -62,8 +64,8 @@ export default function Plus() {
 
         <Reveal index={2}>
           <Benefit
-            title="Swap any meal, watch the budget move"
-            body="Change a dinner and the week’s total and your grocery list follow."
+            title={t('Swap any meal, watch the budget move')}
+            body={t('Change a dinner and the week’s total and your grocery list follow.')}
             pose="point"
           >
             <SwapDemo />
@@ -72,8 +74,8 @@ export default function Plus() {
 
         <Reveal index={3}>
           <Benefit
-            title="Share the list with everyone at home"
-            body="Invite the people you shop with. They see the same list and check things off as they go."
+            title={t('Share the list with everyone at home')}
+            body={t('Invite the people you shop with. They see the same list and check things off as they go.')}
             pose="shop"
           >
             <ShareDemo />
@@ -82,9 +84,9 @@ export default function Plus() {
 
         <Reveal index={4}>
           <View style={styles.keeps}>
-            <AppText style={styles.sectionTitle} accessibilityRole="header">Included free</AppText>
+            <AppText style={styles.sectionTitle} accessibilityRole="header">{t('Included free')}</AppText>
             <View style={styles.pills}>
-              {KEEPS.map((k) => (
+              {keeps.map((k) => (
                 <View key={k} style={[styles.pill, { backgroundColor: c.tint }]}>
                   <Ionicons name="checkmark" size={15} color={c.primaryText} accessibilityElementsHidden />
                   <AppText variant="subhead" color={c.text}>{k}</AppText>
@@ -99,19 +101,23 @@ export default function Plus() {
         <View style={[styles.footer, { borderTopColor: c.line, backgroundColor: c.bg }]}>
           <View style={styles.priceRow}>
             <View style={styles.flex}>
-              <AppText style={styles.price}>{`$${annual.price} a year`}</AppText>
-              <AppText variant="footnote">About $4.92 a month, billed yearly</AppText>
+              <AppText style={styles.price}>{t('{price} a year', { price: `$${annual.price}` })}</AppText>
+              <AppText variant="footnote">{t('About {price} a month, billed yearly', { price: '$4.92' })}</AppText>
             </View>
             <Pulse>
               <View style={[styles.save, { backgroundColor: c.badge }]}>
-                <AppText variant="footnote" weight="700" color={c.badgeText}>{annual.badge}</AppText>
+                <AppText variant="footnote" weight="700" color={c.badgeText}>{tx(annual.badge)}</AppText>
               </View>
             </Pulse>
           </View>
           <Nudge>
-            <PrimaryButton label="Get Kavi Plus" feedback="success" onPress={() => router.push('/paywall')} />
+            <PrimaryButton label={t('Get Kavi Plus')} feedback="success" onPress={() => router.push('/paywall')} />
           </Nudge>
-          <AppText variant="footnote" style={styles.center}>{`Cancel any time in your ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'} settings.`}</AppText>
+          <AppText variant="footnote" style={styles.center}>
+            {Platform.OS === 'ios'
+              ? t('Cancel any time in your App Store settings.')
+              : t('Cancel any time in your Google Play settings.')}
+          </AppText>
         </View>
       )}
     </SafeAreaView>
@@ -138,6 +144,7 @@ function Benefit({ title, body, pose, children }: { title: string; body: string;
 // haptics each, then a buzz when the month is full. Tap the card to watch it again.
 function WeekGrid() {
   const c = useTheme();
+  const { t } = useT();
   const fills = useRef([0, 1, 2, 3].map(() => new Animated.Value(reduceMotion() ? 1 : 0))).current;
   const [run, setRun] = useState(0);
 
@@ -160,7 +167,7 @@ function WeekGrid() {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel="Free plans one week of a month. Plus plans every week. Replay the animation."
+      accessibilityLabel={t('Free plans one week of a month. Plus plans every week. Replay the animation.')}
       to={0.985}
       onPress={() => {
         haptic.tap();
@@ -168,16 +175,16 @@ function WeekGrid() {
       }}
     >
       <Card style={styles.grid}>
-        <AppText style={styles.benefitTitle} accessibilityRole="header">Every week, not once a month</AppText>
+        <AppText style={styles.benefitTitle} accessibilityRole="header">{t('Every week, not once a month')}</AppText>
         <View style={styles.weekLabels}>
           <View style={styles.rowLabel} />
-          {['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((w) => (
-            <AppText key={w} variant="footnote" style={styles.weekLabel}>{w}</AppText>
+          {[1, 2, 3, 4].map((n) => (
+            <AppText key={n} variant="footnote" style={styles.weekLabel}>{t('Week {n}', { n })}</AppText>
           ))}
         </View>
 
         <View style={styles.gridRow}>
-          <AppText style={styles.rowLabel}>Free</AppText>
+          <AppText style={styles.rowLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{t('Free')}</AppText>
           {[0, 1, 2, 3].map((i) =>
             i === 0 ? (
               <View key={i} style={[styles.cell, { backgroundColor: c.control, borderColor: c.control }]}>
@@ -205,13 +212,15 @@ function WeekGrid() {
           ))}
         </View>
 
-        <AppText variant="footnote" style={styles.replay}>Tap to replay</AppText>
+        <AppText variant="footnote" style={styles.replay}>{t('Tap to replay')}</AppText>
       </Card>
     </PressableScale>
   );
 }
 
-// A made-up week: swapping the dinner changes the total. Cycles on its own, or tap to swap now.
+// A made-up week: swapping the dinner changes the total. Cycles on its own, or tap to swap now. Names are content keys,
+// shown with tx().
+// i18n: content
 const SWAPS = [
   { name: 'Veggie quesadillas', cost: 12, total: 159 },
   { name: 'Black bean soup', cost: 9, total: 156 },
@@ -220,6 +229,7 @@ const EXAMPLE_BUDGET = 400;
 
 function SwapDemo() {
   const c = useTheme();
+  const { t, tx } = useT();
   const [i, setI] = useState(0);
   const settle = useRef(new Animated.Value(1)).current;
   const total = useCountUp(SWAPS[i].total);
@@ -241,7 +251,7 @@ function SwapDemo() {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`Example: dinner is ${meal.name}, ${meal.cost} dollars. Tap to swap it.`}
+      accessibilityLabel={t('Example: dinner is {meal}, {cost} dollars. Tap to swap it.', { meal: tx(meal.name), cost: meal.cost })}
       to={0.98}
       onPress={() => {
         haptic.tap();
@@ -249,7 +259,7 @@ function SwapDemo() {
       }}
       style={[styles.demo, { backgroundColor: c.bg }]}
     >
-      <AppText variant="eyebrow" style={styles.example}>Example · tap to swap</AppText>
+      <AppText variant="eyebrow" style={styles.example}>{t('Example · tap to swap')}</AppText>
       <View style={styles.demoRow}>
         <Animated.View
           style={[
@@ -257,8 +267,8 @@ function SwapDemo() {
             { opacity: settle, transform: [{ translateY: settle.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] },
           ]}
         >
-          <AppText variant="eyebrow" color={c.primaryText}>Dinner</AppText>
-          <AppText style={styles.demoMeal}>{meal.name}</AppText>
+          <AppText variant="eyebrow" color={c.primaryText}>{t('Dinner')}</AppText>
+          <AppText style={styles.demoMeal}>{tx(meal.name)}</AppText>
         </Animated.View>
         <AppText variant="money" style={styles.demoCost}>{`$${meal.cost}`}</AppText>
         <View style={[styles.swapIcon, { backgroundColor: c.tint }]}>
@@ -267,19 +277,26 @@ function SwapDemo() {
       </View>
       <View style={styles.demoTotal}>
         <AppText variant="subhead" color={c.text} style={styles.nums}>
-          {`Week total $${Math.round(total)} of $${EXAMPLE_BUDGET}`}
+          {t('Week total {total} of {budget}', { total: `$${Math.round(total)}`, budget: `$${EXAMPLE_BUDGET}` })}
         </AppText>
-        <ProgressBar value={Math.round(total)} max={EXAMPLE_BUDGET} label={`Example week total ${meal.total} of ${EXAMPLE_BUDGET} dollars`} />
+        <ProgressBar
+          value={Math.round(total)}
+          max={EXAMPLE_BUDGET}
+          label={t('Example week total {total} of {budget} dollars', { total: meal.total, budget: EXAMPLE_BUDGET })}
+        />
       </View>
     </PressableScale>
   );
 }
 
 // A made-up shared list: someone at home checks things off while you watch. Cycles on its own, or tap to tick the next.
+// Items are content keys, shown with tx().
+// i18n: content
 const SHARED = ['Avocado', 'Basil', 'Carrots', 'Bananas'];
 
 function ShareDemo() {
   const c = useTheme();
+  const { t, tx } = useT();
   const [n, setN] = useState(1);
 
   useEffect(() => {
@@ -291,7 +308,7 @@ function ShareDemo() {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel="Example shared grocery list. Tap to check off the next item."
+      accessibilityLabel={t('Example shared grocery list. Tap to check off the next item.')}
       to={0.98}
       onPress={() => {
         haptic.tap();
@@ -299,18 +316,18 @@ function ShareDemo() {
       }}
       style={[styles.demo, { backgroundColor: c.bg }]}
     >
-      <AppText variant="eyebrow" style={styles.example}>Example · tap to check off</AppText>
+      <AppText variant="eyebrow" style={styles.example}>{t('Example · tap to check off')}</AppText>
       {SHARED.map((item, idx) => {
         const done = idx < n;
         return (
           <View key={item} style={styles.shareRow}>
             <CheckCircle on={done} />
-            <AppText style={[styles.flex, done && styles.struck]} color={done ? c.muted : c.text}>{item}</AppText>
+            <AppText style={[styles.flex, done && styles.struck]} color={done ? c.muted : c.text}>{tx(item)}</AppText>
           </View>
         );
       })}
       <AppText variant="footnote" weight="600" color={c.primaryText} style={styles.sam}>
-        {n > 0 ? `Sam just checked off ${SHARED[n - 1]}` : 'Sam is out shopping…'}
+        {n > 0 ? t('Sam just checked off {item}', { item: tx(SHARED[n - 1]) }) : t('Sam is out shopping…')}
       </AppText>
     </PressableScale>
   );
@@ -366,7 +383,8 @@ const styles = StyleSheet.create({
   benefitTitle: { fontFamily: fonts.displaySemi, fontSize: 20, lineHeight: 25, letterSpacing: -0.3 },
   weekLabels: { flexDirection: 'row', gap: 6, marginTop: 2 },
   weekLabel: { flex: 1, textAlign: 'center' },
-  rowLabel: { width: 44, fontFamily: fonts.displaySemi, fontSize: 16 },
+  // Wide enough for "Gratuit" or "मुफ़्त"; longer words shrink to fit rather than push the cells.
+  rowLabel: { width: 64, fontFamily: fonts.displaySemi, fontSize: 16 },
   gridRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   cell: { flex: 1, height: 42, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   locked: { borderStyle: 'dashed' },

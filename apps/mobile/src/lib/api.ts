@@ -16,6 +16,7 @@ import {
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
+import { currentLanguage, LANGUAGES, t } from '../i18n';
 import { perServing, type IngredientNutrition } from './nutrition';
 import { supabase } from './supabase';
 
@@ -54,7 +55,7 @@ export async function signInWithProvider(provider: OAuthProvider): Promise<boole
     provider,
     options: { redirectTo, skipBrowserRedirect: true },
   });
-  if (error || !data.url) throw new Error(error?.message ?? 'Could not start sign-in.');
+  if (error || !data.url) throw new Error(error?.message ?? t('Could not start sign-in.'));
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== 'success') return false;
@@ -63,7 +64,7 @@ export async function signInWithProvider(provider: OAuthProvider): Promise<boole
   const failure = params.get('error_description') ?? params.get('error');
   if (failure) throw new Error(failure);
   const code = params.get('code');
-  if (!code) throw new Error('Sign-in did not finish. Try again.');
+  if (!code) throw new Error(t('Sign-in did not finish. Try again.'));
   const { error: exchangeError } = await db().auth.exchangeCodeForSession(code);
   if (exchangeError) throw new Error(exchangeError.message);
   return true;
@@ -74,10 +75,10 @@ export type EmailSignUpResult = 'signed-in' | 'confirm';
 
 const friendlyAuthError = (message: string) => {
   const m = message.toLowerCase();
-  if (m.includes('invalid login')) return 'That email and password do not match.';
-  if (m.includes('already registered')) return 'There is already an account with that email. Try signing in.';
-  if (m.includes('rate limit')) return 'Too many tries. Wait a minute and try again.';
-  if (m.includes('email not confirmed')) return 'Confirm your email first. Check your inbox for the link.';
+  if (m.includes('invalid login')) return t('That email and password do not match.');
+  if (m.includes('already registered')) return t('There is already an account with that email. Try signing in.');
+  if (m.includes('rate limit')) return t('Too many tries. Wait a minute and try again.');
+  if (m.includes('email not confirmed')) return t('Confirm your email first. Check your inbox for the link.');
   return message;
 };
 
@@ -197,13 +198,14 @@ export function currentWeekStart(now = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// "Oct 27 to Nov 2" for a week starting on the given Monday.
+// "Oct 27 to Nov 2" for a week starting on the given Monday, in the language on screen.
 export function weekLabel(weekStart: string): string {
   const [y, m, d] = weekStart.split('-').map(Number);
   const start = new Date(y, m - 1, d);
   const end = new Date(y, m - 1, d + 6);
-  const fmt = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${fmt(start)} to ${fmt(end)}`;
+  const locale = LANGUAGES.find((l) => l.code === currentLanguage())?.locale ?? 'en-US';
+  const fmt = (date: Date) => date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  return t('{start} to {end}', { start: fmt(start), end: fmt(end) });
 }
 
 // The household's latest plan as 21 slots in order, with costs scaled to the household.
@@ -248,7 +250,7 @@ export async function loadWeek(
       appliances: needs(item.recipe.tags),
     };
   }
-  if (meals.filter(Boolean).length !== 21) throw new Error('This week’s plan is incomplete. Plan the week again.');
+  if (meals.filter(Boolean).length !== 21) throw new Error(t('This week’s plan is incomplete. Plan the week again.'));
   return { planId: plan.id, weekStart: plan.week_start, meals };
 }
 
@@ -367,18 +369,35 @@ export async function loadRecipe(
 
 // ---- Edge Functions
 
+// The functions answer `{ error: code, message }` with the message in English. Known codes get a translated sentence;
+// anything else shows the server's own message.
+const serverError = (code: unknown, message: unknown): string => {
+  switch (code) {
+    case 'plan_limit':
+      return t('The free plan includes one plan a month.');
+    case 'profile_missing':
+      return t('Finish setting up your household first');
+    case 'not_enough_recipes':
+      return t('Not enough recipes match your allergies, diet and kitchen to fill a week.');
+    case 'plan_generation_failed':
+      return t('Could not build a plan. Try again.');
+    default:
+      return typeof message === 'string' && message ? message : t('Something went wrong. Try again.');
+  }
+};
+
 // Calls a function and turns its error responses into a message the app can show.
 async function invoke<T>(name: string, body: object): Promise<T> {
   const { data, error } = await db().functions.invoke(name, { body });
   if (error) {
     if (error instanceof FunctionsHttpError) {
       const payload = await error.context.json().catch(() => null);
-      throw new Error(payload?.message ?? 'Something went wrong. Try again.');
+      throw new Error(serverError(payload?.error, payload?.message));
     }
     if (error instanceof FunctionsFetchError) {
-      throw new Error('Kavi can’t reach the internet. Check your connection and try again.');
+      throw new Error(t('Kavi can’t reach the internet. Check your connection and try again.'));
     }
-    throw new Error('Something went wrong. Try again.');
+    throw new Error(t('Something went wrong. Try again.'));
   }
   return data as T;
 }

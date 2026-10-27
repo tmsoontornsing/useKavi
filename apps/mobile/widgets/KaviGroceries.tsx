@@ -8,6 +8,15 @@ export type KaviGroceriesProps = {
   items: string;
   done: number;
   total: number;
+  // Every piece of text, translated by src/lib/widgets.ts: this runtime can't reach the app's translator.
+  title: string; // the empty state's heading, "GROCERIES"
+  header: string; // "GROCERIES · 5 LEFT"
+  emptyText: string; // "Everything is in your cart" or "Plan your week to build a list"
+  progress: string; // "3 of 12 items", under the empty state
+  // The line under the list for each size, since each shows a different number of items: "and 4 more · 3 of 12 in cart".
+  footerSmall: string;
+  footerMedium: string;
+  footerLarge: string;
 };
 
 // The grocery list at a glance: what is left to buy and how far along the trip is. Runs in an isolated widget
@@ -19,8 +28,6 @@ const KaviGroceries = (props: KaviGroceriesProps, env: WidgetEnvironment) => {
   const green = tinted ? undefined : '#1F7A4D';
   const accent = (modifiers: ReturnType<typeof bold>[]) => (green ? [...modifiers, foregroundStyle(green)] : modifiers);
   const list = props.items ? props.items.split('|') : [];
-  const left = Math.max(0, props.total - props.done);
-  const header = props.total === 0 ? 'GROCERIES' : left === 0 ? 'GROCERIES · ALL DONE' : `GROCERIES · ${left} LEFT`;
 
   const row = (name: string) => (
     <HStack key={name} spacing={6}>
@@ -34,12 +41,12 @@ const KaviGroceries = (props: KaviGroceriesProps, env: WidgetEnvironment) => {
     return (
       <HStack alignment="top">
         <VStack alignment="leading" spacing={4}>
-          <Text modifiers={accent([font({ size: 11, weight: 'bold' })])}>GROCERIES</Text>
+          <Text modifiers={accent([font({ size: 11, weight: 'bold' })])}>{props.title}</Text>
           <Text modifiers={[font({ size: 17, weight: 'semibold' }), lineLimit(3)]}>
-            {props.total > 0 ? 'Everything is in your cart' : 'Plan your week to build a list'}
+            {props.emptyText}
           </Text>
           <Spacer />
-          {props.total > 0 ? <Text modifiers={[font({ size: 12 })]}>{`${props.done} of ${props.total} items`}</Text> : null}
+          {props.total > 0 ? <Text modifiers={[font({ size: 12 })]}>{props.progress}</Text> : null}
         </VStack>
         <Spacer />
       </HStack>
@@ -47,16 +54,17 @@ const KaviGroceries = (props: KaviGroceriesProps, env: WidgetEnvironment) => {
   }
 
   // One column of items in the small size; two in the medium; the large size fills both columns taller.
+  // GROCERY_SHOWN in src/lib/widgets.ts must match, since it writes each size's footer.
   const perColumn = env.widgetFamily === 'systemSmall' ? 4 : env.widgetFamily === 'systemMedium' ? 4 : 9;
   const columns = env.widgetFamily === 'systemSmall' ? 1 : 2;
   const shown = list.slice(0, perColumn * columns);
   const slices = Array.from({ length: columns }, (_, c) => shown.slice(c * perColumn, (c + 1) * perColumn));
-  const more = list.length > shown.length ? left - shown.length : 0;
+  const footer = env.widgetFamily === 'systemSmall' ? props.footerSmall : env.widgetFamily === 'systemMedium' ? props.footerMedium : props.footerLarge;
 
   return (
     <VStack alignment="leading" spacing={6}>
       <HStack>
-        <Text modifiers={accent([font({ size: 11, weight: 'bold' })])}>{header}</Text>
+        <Text modifiers={accent([font({ size: 11, weight: 'bold' })])}>{props.header}</Text>
         <Spacer />
       </HStack>
       <HStack alignment="top" spacing={14}>
@@ -70,7 +78,7 @@ const KaviGroceries = (props: KaviGroceriesProps, env: WidgetEnvironment) => {
       <Spacer />
       <HStack>
         <Text modifiers={[font({ size: 11 }), foregroundStyle('secondary')]}>
-          {more > 0 ? `and ${more} more · ${props.done} of ${props.total} in cart` : `${props.done} of ${props.total} in cart`}
+          {footer}
         </Text>
         <Spacer />
       </HStack>
@@ -82,4 +90,11 @@ export default createWidget<KaviGroceriesProps>('KaviGroceries', KaviGroceries, 
   items: '',
   done: 0,
   total: 0,
+  title: 'GROCERIES',
+  header: 'GROCERIES',
+  emptyText: 'Plan your week to build a list',
+  progress: '0 of 0 items',
+  footerSmall: '0 of 0 in cart',
+  footerMedium: '0 of 0 in cart',
+  footerLarge: '0 of 0 in cart',
 });

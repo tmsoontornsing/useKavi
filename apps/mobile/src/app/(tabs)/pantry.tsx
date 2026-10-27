@@ -7,6 +7,7 @@ import { Card, IconButton, TextButton } from '../../components/Buttons';
 import { Mascot } from '../../components/Mascot';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
+import { comma, useT } from '../../i18n';
 import { allergensIn } from '../../lib/allergens';
 import { animateLayout, haptic, PressableScale, Reveal, Wiggle } from '../../motion';
 import { useApp } from '../../state/AppState';
@@ -14,7 +15,8 @@ import { fonts, radius, useTheme } from '../../theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-// The shelves a new item can go on, in the order they appear.
+// The shelves a new item can go on, in the order they appear. Names stay English here (they are saved); shown with tx().
+// i18n: content
 const SHELVES: { name: string; icon: IconName }[] = [
   { name: 'Staples', icon: 'basket-outline' },
   { name: 'Spices', icon: 'leaf-outline' },
@@ -24,6 +26,8 @@ const SHELVES: { name: string; icon: IconName }[] = [
 const shelfIcon = (name: string): IconName => SHELVES.find((s) => s.name === name)?.icon ?? 'file-tray-outline';
 
 // Things many kitchens already have, named the way the recipe catalog names them so the grocery list can match them.
+// Saved in English; shown with tx().
+// i18n: content
 const SUGGESTIONS: { name: string; shelf: string }[] = [
   { name: 'Butter', shelf: 'Fridge' },
   { name: 'Eggs', shelf: 'Fridge' },
@@ -41,6 +45,10 @@ const SUGGESTIONS: { name: string; shelf: string }[] = [
 
 export default function Pantry() {
   const c = useTheme();
+  const { t, tn, tx } = useT();
+  // Allergy labels as a phrase inside a sentence: "milk and eggs".
+  const allergenNames = (hits: string[]) => hits.map((h) => tx(h).toLowerCase());
+  const andList = (hits: string[]) => allergenNames(hits).reduce((a, b) => t('{a} and {b}', { a, b }));
   const { pantry, pantrySavings, allergies, addPantryItem, removePantryItem } = useApp();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -83,11 +91,11 @@ export default function Pantry() {
   const header = (
     <View style={styles.headRow}>
       <View style={styles.flex}>
-        <AppText variant="largeTitle" accessibilityRole="header">Pantry</AppText>
-        <AppText variant="subhead">What you already have</AppText>
+        <AppText variant="largeTitle" accessibilityRole="header">{t('Pantry')}</AppText>
+        <AppText variant="subhead">{t('What you already have')}</AppText>
       </View>
-      {count > 0 ? <TextButton label={editing ? 'Done' : 'Edit'} onPress={() => setEditing((e) => !e)} /> : null}
-      <IconButton icon={adding ? 'close' : 'add'} label={adding ? 'Close add item' : 'Add an item'} onPress={() => (adding ? closeAdd() : setAdding(true))} />
+      {count > 0 ? <TextButton label={editing ? t('Done') : t('Edit')} onPress={() => setEditing((e) => !e)} /> : null}
+      <IconButton icon={adding ? 'close' : 'add'} label={adding ? t('Close add item') : t('Add an item')} onPress={() => (adding ? closeAdd() : setAdding(true))} />
     </View>
   );
 
@@ -98,8 +106,8 @@ export default function Pantry() {
           <Card style={styles.addCard}>
             <TextInput
               autoFocus
-              accessibilityLabel="New pantry item"
-              placeholder="Add an item, like brown rice"
+              accessibilityLabel={t('New pantry item')}
+              placeholder={t('Add an item, like brown rice')}
               placeholderTextColor={c.muted}
               value={draft}
               onChangeText={setDraft}
@@ -112,11 +120,11 @@ export default function Pantry() {
               <View style={[styles.note, { backgroundColor: c.warnBg }]} accessibilityRole="alert">
                 <Ionicons name="alert-circle" size={16} color={c.warn} />
                 <AppText variant="footnote" color={c.warn} weight="600" style={styles.flex}>
-                  {`This looks like it contains ${draftHits.join(' and ').toLowerCase()}, which you avoid.`}
+                  {t('This looks like it contains {allergens}, which you avoid.', { allergens: andList(draftHits) })}
                 </AppText>
               </View>
             ) : null}
-            <View style={styles.pickRow} accessibilityRole="radiogroup" accessibilityLabel="Shelf">
+            <View style={styles.pickRow} accessibilityRole="radiogroup" accessibilityLabel={t('Shelf')}>
               {SHELVES.map((s) => {
                 const on = shelf === s.name;
                 return (
@@ -131,14 +139,14 @@ export default function Pantry() {
                     style={[styles.pick, { backgroundColor: on ? c.primary : c.bg, borderColor: on ? c.primary : c.control }]}
                   >
                     <Ionicons name={s.icon} size={15} color={on ? c.onPrimary : c.text} />
-                    <AppText variant="subhead" weight="600" color={on ? c.onPrimary : c.text}>{s.name}</AppText>
+                    <AppText variant="subhead" weight="600" color={on ? c.onPrimary : c.text}>{tx(s.name)}</AppText>
                   </Pressable>
                 );
               })}
             </View>
             {suggestions.length > 0 ? (
               <View style={styles.quick}>
-                <AppText variant="eyebrow">Many kitchens have</AppText>
+                <AppText variant="eyebrow">{t('Many kitchens have')}</AppText>
                 <View style={styles.chips}>
                   {suggestions.map((s) => {
                     const hits = allergensIn(s.name, allergies);
@@ -146,13 +154,17 @@ export default function Pantry() {
                       <PressableScale
                         key={s.name}
                         accessibilityRole="button"
-                        accessibilityLabel={`Add ${s.name} to ${s.shelf}${hits.length ? `. Contains ${hits.join(' and ').toLowerCase()}, which you avoid` : ''}`}
+                        accessibilityLabel={
+                          hits.length
+                            ? t('Add {item} to {shelf}. Contains {allergens}, which you avoid', { item: tx(s.name), shelf: tx(s.shelf), allergens: andList(hits) })
+                            : t('Add {item} to {shelf}', { item: tx(s.name), shelf: tx(s.shelf) })
+                        }
                         to={0.93}
                         onPress={() => quickAdd(s.name, s.shelf)}
                         style={[styles.suggest, { borderColor: hits.length ? c.warn : c.control, backgroundColor: hits.length ? c.warnBg : 'transparent' }]}
                       >
                         <Ionicons name={hits.length ? 'alert-circle' : 'add'} size={14} color={hits.length ? c.warn : c.primaryText} />
-                        <AppText variant="subhead" color={hits.length ? c.warn : c.text}>{s.name}</AppText>
+                        <AppText variant="subhead" color={hits.length ? c.warn : c.text}>{tx(s.name)}</AppText>
                       </PressableScale>
                     );
                   })}
@@ -160,7 +172,7 @@ export default function Pantry() {
               </View>
             ) : null}
             <View style={styles.addActions}>
-              <TextButton label="Done" onPress={closeAdd} />
+              <TextButton label={t('Done')} onPress={closeAdd} />
             </View>
           </Card>
         </Reveal>
@@ -171,14 +183,14 @@ export default function Pantry() {
           <View style={[styles.summary, { backgroundColor: c.tint }]}>
             <View style={styles.summaryText}>
               <AppText style={[styles.summaryNum, { color: c.primaryText }]}>{count}</AppText>
-              <AppText variant="headline">{count === 1 ? 'item on hand' : 'items on hand'}</AppText>
+              <AppText variant="headline">{tn(count, 'item on hand', 'items on hand')}</AppText>
               <AppText variant="subhead" color={c.text}>
                 {pantrySavings > 0
-                  ? `Kept off your list, saving about ${money(pantrySavings)} this week.`
-                  : 'Kavi leaves these off your grocery list.'}
+                  ? t('Kept off your list, saving about {amount} this week.', { amount: money(pantrySavings) })
+                  : t('Kavi leaves these off your grocery list.')}
               </AppText>
             </View>
-            <Mascot pose="yum" size={104} tappable label="Pip, Kavi's jar, enjoying a snack" style={styles.pip} />
+            <Mascot pose="yum" size={104} tappable label={t('Pip, Kavi\'s jar, enjoying a snack')} style={styles.pip} />
           </View>
         </Reveal>
       ) : null}
@@ -189,13 +201,13 @@ export default function Pantry() {
             <Ionicons name="alert-circle" size={20} color={c.warn} style={styles.warnIcon} />
             <View style={styles.flex}>
               <AppText variant="headline" color={c.warn}>
-                {flagged.length === 1 ? '1 item has an allergen you avoid' : `${flagged.length} items have allergens you avoid`}
+                {tn(flagged.length, '{n} item has an allergen you avoid', '{n} items have allergens you avoid')}
               </AppText>
               <AppText variant="subhead" color={c.warn}>
-                {flagged.map((f) => `${f.item} (${f.hits.join(', ').toLowerCase()})`).join(', ')}.
+                {flagged.map((f) => `${tx(f.item)} (${allergenNames(f.hits).join(comma())})`).join(comma())}.
               </AppText>
               <AppText variant="footnote" color={c.warn}>
-                Kavi checks item names only. Read every label, since products can hide allergens, and keep these away from anyone who is allergic.
+                {t('Kavi checks item names only. Read every label, since products can hide allergens, and keep these away from anyone who is allergic.')}
               </AppText>
             </View>
           </View>
@@ -205,15 +217,15 @@ export default function Pantry() {
       {count === 0 && !adding ? (
         <View style={styles.empty}>
           <Mascot pose="peek" size={120} tappable decorative />
-          <AppText variant="headline">Your pantry is empty</AppText>
+          <AppText variant="headline">{t('Your pantry is empty')}</AppText>
           <AppText variant="subhead" style={styles.center}>
-            Add what you already have, like rice or olive oil, and Kavi leaves it off your grocery list.
+            {t('Add what you already have, like rice or olive oil, and Kavi leaves it off your grocery list.')}
           </AppText>
-          <TextButton label="Add an Item" onPress={() => setAdding(true)} />
+          <TextButton label={t('Add an Item')} onPress={() => setAdding(true)} />
         </View>
       ) : null}
 
-      {editing ? <AppText variant="footnote" style={styles.editHint}>Tap an item to remove it.</AppText> : null}
+      {editing ? <AppText variant="footnote" style={styles.editHint}>{t('Tap an item to remove it.')}</AppText> : null}
 
       {pantry
         .filter((s) => s.items.length > 0)
@@ -221,7 +233,7 @@ export default function Pantry() {
           <View key={s.name} style={styles.shelfGroup}>
             <View style={styles.shelfHead}>
               <Ionicons name={shelfIcon(s.name)} size={16} color={c.primaryText} />
-              <AppText style={styles.shelfName} accessibilityRole="header">{s.name}</AppText>
+              <AppText style={styles.shelfName} accessibilityRole="header">{tx(s.name)}</AppText>
               {flagged.some((f) => f.shelf === s.name) ? (
                 <View style={styles.shelfWarn}>
                   <Ionicons name="alert-circle" size={15} color={c.warn} />
@@ -240,12 +252,12 @@ export default function Pantry() {
                       accessibilityRole={editing ? 'button' : 'text'}
                       accessibilityLabel={
                         editing
-                          ? `Remove ${item}`
+                          ? t('Remove {item}', { item: tx(item) })
                           : bad
-                            ? `${item}. Contains ${hits.join(' and ').toLowerCase()}, which you avoid`
-                            : item
+                            ? t('{item}. Contains {allergens}, which you avoid', { item: tx(item), allergens: andList(hits) })
+                            : tx(item)
                       }
-                      accessibilityHint={editing ? undefined : 'Press and hold to edit the shelf'}
+                      accessibilityHint={editing ? undefined : t('Press and hold to edit the shelf')}
                       to={0.92}
                       // Press and hold starts editing, like rearranging icons on the iOS home screen.
                       onLongPress={() => {
@@ -270,10 +282,10 @@ export default function Pantry() {
                     >
                       {bad ? <Ionicons name="alert-circle" size={16} color={c.warn} /> : null}
                       <View>
-                        <AppText style={[styles.itemText, bad && { color: c.warn }]}>{item}</AppText>
+                        <AppText style={[styles.itemText, bad && { color: c.warn }]}>{tx(item)}</AppText>
                         {bad ? (
                           <AppText variant="footnote" weight="600" color={c.warn} style={styles.itemHit}>
-                            {`Contains ${hits.join(', ').toLowerCase()}`}
+                            {t('Contains {allergens}', { allergens: allergenNames(hits).join(comma()) })}
                           </AppText>
                         ) : null}
                       </View>

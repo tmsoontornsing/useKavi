@@ -7,6 +7,7 @@ import { RadioDot } from '../../components/Controls';
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { goToStep } from '../../components/StepHeader';
 import { DIETS } from '../../data/mock';
+import { useT } from '../../i18n';
 import { useApp } from '../../state/AppState';
 import { useTheme } from '../../theme';
 
@@ -14,23 +15,24 @@ export default function Diet() {
   const c = useTheme();
   const { diet, setDiet } = useApp();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const { t, tx } = useT();
 
   return (
     <OnboardingShell
       step={1}
       pip="think"
-      backLabel={edit ? 'Back to Settings' : 'Back to welcome'}
-      title="How Does Your Household Eat?"
-      intro="Pick the one that fits most meals. You can change it later in Settings."
+      backLabel={edit ? t('Back to Settings') : t('Back to welcome')}
+      title={t('How Does Your Household Eat?')}
+      intro={t('Pick the one that fits most meals. You can change it later in Settings.')}
       footer={
         <PrimaryButton
-          label={edit ? 'Done' : 'Continue'}
+          label={edit ? t('Done') : t('Continue')}
           onPress={() => (edit ? router.back() : goToStep(1, 2))}
         />
       }
     >
       <Card style={styles.list}>
-        <View accessibilityRole="radiogroup" accessibilityLabel="Diet">
+        <View accessibilityRole="radiogroup" accessibilityLabel={t('Diet')}>
           {DIETS.map((d, i) => {
             const on = diet === d.id;
             return (
@@ -46,8 +48,8 @@ export default function Diet() {
                 ]}
               >
                 <View style={styles.text}>
-                  <AppText variant="headline">{d.name}</AppText>
-                  <AppText variant="subhead">{d.detail}</AppText>
+                  <AppText variant="headline">{tx(d.name)}</AppText>
+                  <AppText variant="subhead">{tx(d.detail)}</AppText>
                 </View>
                 <RadioDot on={on} />
               </Pressable>
