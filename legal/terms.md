@@ -2,9 +2,9 @@
 
 > Kavi suggests meals, prices and nutrition as estimates. It does not replace reading food labels, checking for allergens, or advice from a doctor or dietitian. Subscriptions renew automatically until you cancel in your App Store or Google Play settings. Disputes go to individual arbitration, and you can opt out within 30 days.
 
-Effective [EFFECTIVE DATE]
+Effective October 27, 2026
 
-These Terms of Service ("Terms") are an agreement between you and [COMPANY LEGAL NAME] ("[COMPANY LEGAL NAME]", "we", "us") about your use of the Kavi app and related services (together, "Kavi"). By creating an account or using Kavi, you agree to these Terms and acknowledge our Privacy Policy. If you do not agree, do not use Kavi.
+These Terms of Service ("Terms") are an agreement between you and LOGICBAKER COMPANY LIMITED ("LOGICBAKER COMPANY LIMITED", "we", "us") about your use of the Kavi app and related services (together, "Kavi"). By creating an account or using Kavi, you agree to these Terms and acknowledge our Privacy Policy. If you do not agree, do not use Kavi.
 
 Please read section 15 carefully. It requires most disputes to be resolved by individual arbitration instead of in court, and waives class actions, unless you opt out within 30 days.
 
@@ -78,13 +78,13 @@ Kavi is provided "as is" and "as available". To the fullest extent the law allow
 
 ## 13. Limitation of liability
 
-To the fullest extent the law allows, [COMPANY LEGAL NAME] and its owners, employees, and suppliers will not be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, data, or goodwill, arising from or related to Kavi or these Terms, even if we were told they were possible. Our total liability for all claims relating to Kavi or these Terms is limited to the greater of the amount you paid us for Kavi in the 12 months before the claim arose, or US $50.
+To the fullest extent the law allows, LOGICBAKER COMPANY LIMITED and its owners, employees, and suppliers will not be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, data, or goodwill, arising from or related to Kavi or these Terms, even if we were told they were possible. Our total liability for all claims relating to Kavi or these Terms is limited to the greater of the amount you paid us for Kavi in the 12 months before the claim arose, or US $50.
 
 Nothing in these Terms limits liability that cannot be limited by law, such as liability for fraud, or for death or personal injury caused by gross negligence or willful misconduct where the law does not allow it to be limited.
 
 ## 14. Indemnity
 
-To the extent the law allows, you agree to defend and indemnify [COMPANY LEGAL NAME] against claims, losses, and costs (including reasonable legal fees) arising from your breach of these Terms or your misuse of Kavi, including food you prepare or serve to others.
+To the extent the law allows, you agree to defend and indemnify LOGICBAKER COMPANY LIMITED against claims, losses, and costs (including reasonable legal fees) arising from your breach of these Terms or your misuse of Kavi, including food you prepare or serve to others.
 
 ## 15. Resolving disputes
 
@@ -106,6 +106,6 @@ These Terms and the Privacy Policy are the whole agreement between you and us ab
 
 ## 18. Contact
 
-[COMPANY LEGAL NAME]  
+LOGICBAKER COMPANY LIMITED  
 [MAILING ADDRESS]  
 [CONTACT EMAIL]

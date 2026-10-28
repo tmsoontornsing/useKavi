@@ -2,9 +2,9 @@
 
 > Kavi collects what it needs to plan your meals: your account, household size, budget, diet, allergies, food preferences, pantry, and lists. We do not sell your information, show ads, or track you across other apps. You can delete your account and everything in it from Settings.
 
-Effective [EFFECTIVE DATE]
+Effective October 27, 2026
 
-This Privacy Policy explains what information [COMPANY LEGAL NAME] ("we", "us") collects through the Kavi app and related services ("Kavi"), how we use and share it, and the choices and rights you have. It applies to everyone who uses Kavi.
+This Privacy Policy explains what information LOGICBAKER COMPANY LIMITED ("we", "us") collects through the Kavi app and related services ("Kavi"), how we use and share it, and the choices and rights you have. It applies to everyone who uses Kavi.
 
 ## 1. Information you give us
 
@@ -80,6 +80,6 @@ We will update this Policy when our practices change. If a change is material, w
 
 ## 13. Contact us
 
-[COMPANY LEGAL NAME]  
+LOGICBAKER COMPANY LIMITED  
 [MAILING ADDRESS]  
 [CONTACT EMAIL]
