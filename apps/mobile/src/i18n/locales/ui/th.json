@@ -398,5 +398,6 @@
   "French": "ฝรั่งเศส",
   "Portuguese": "โปรตุเกส",
   "Thai": "ไทย",
-  "You’ve reached this month’s plan limit. It resets on the 1st.": "คุณใช้ครบจำนวนแผนของเดือนนี้แล้ว ระบบจะรีเซ็ตในวันที่ 1"
+  "You’ve reached this month’s plan limit. It resets on the 1st.": "คุณใช้ครบจำนวนแผนของเดือนนี้แล้ว ระบบจะรีเซ็ตในวันที่ 1",
+  "Prices, calories, nutrition and cook times are estimates, and Kavi can make mistakes. Real amounts vary by store, brand and how you cook, so none of it is exact.": "ราคา แคลอรี่ โภชนาการ และเวลาทำอาหารเป็นเพียงค่าประมาณ และ Kavi อาจผิดพลาดได้ ค่าจริงต่างกันไปตามร้าน ยี่ห้อ และวิธีปรุง จึงไม่มีตัวเลขใดที่แน่นอน"
 }

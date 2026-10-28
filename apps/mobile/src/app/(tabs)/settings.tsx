@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
+import { EstimateNote } from '../../components/EstimateNote';
 import { Card } from '../../components/Buttons';
 import { KaviSwitch } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
@@ -124,6 +125,8 @@ export default function Settings() {
         />
         <ActionRow label={t('Delete Account')} danger onPress={confirmDelete} />
       </Section>
+
+      <EstimateNote />
 
       <Section title={t('About')}>
         <ActionRow label={t('Terms of Service')} onPress={() => router.push('/legal/terms')} first chevron />

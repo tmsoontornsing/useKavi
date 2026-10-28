@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Image, Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
+import { EstimateNote } from '../../components/EstimateNote';
 import { Card, IconButton } from '../../components/Buttons';
 import { CheckCircle, ProgressBar } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
@@ -224,6 +225,7 @@ export default function Groceries() {
           </Card>
         );
       })}
+      {all.length > 0 ? <EstimateNote /> : null}
     </TabScreen>
   );
 }

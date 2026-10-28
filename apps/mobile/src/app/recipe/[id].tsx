@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
+import { EstimateNote } from '../../components/EstimateNote';
 import { Card, TextButton } from '../../components/Buttons';
 import { Mascot } from '../../components/Mascot';
 import { NutritionFacts } from '../../components/NutritionFacts';
@@ -193,6 +194,8 @@ export default function Recipe() {
                 <NutritionFacts nutrition={detail.nutrition} serves={detail.serves} />
               </View>
             ) : null}
+
+            <EstimateNote />
 
             <View style={styles.section}>
               <View style={styles.stepsHead}>

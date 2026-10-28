@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
+import { EstimateNote } from '../../components/EstimateNote';
 import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
@@ -143,6 +144,7 @@ export default function Swap() {
             })}
           </View>
         </View>
+        <EstimateNote />
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: c.line }]}>

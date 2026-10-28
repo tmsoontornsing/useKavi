@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
+import { EstimateNote } from '../../components/EstimateNote';
 import { Card, IconButton, PrimaryButton, TextButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
@@ -77,6 +78,7 @@ export default function Week() {
             </Reveal>
           ))
         : null}
+      {ready && app.plan.length === 21 ? <EstimateNote /> : null}
     </TabScreen>
   );
 }
