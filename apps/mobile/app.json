@@ -9,12 +9,13 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.logicbaker.kavi",
+      "bundleIdentifier": "com.tmsoontornsing.kavi",
       "icon": {
         "light": "./assets/icon.png",
         "dark": "./assets/ios-dark.png",
         "tinted": "./assets/ios-tinted.png"
-      }
+      },
+      "appleTeamId": "M5DQ54ZDAB"
     },
     "android": {
       "package": "com.usekavi.app",
@@ -25,6 +26,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ],
+      "permissions": [
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR"
       ]
@@ -54,8 +59,8 @@
       [
         "expo-widgets",
         {
-          "bundleIdentifier": "com.logicbaker.kavi.widgets",
-          "groupIdentifier": "group.com.logicbaker.kavi",
+          "bundleIdentifier": "com.tmsoontornsing.kavi.widgets",
+          "groupIdentifier": "group.com.tmsoontornsing.kavi",
           "enableAndroid": false,
           "widgets": [
             {

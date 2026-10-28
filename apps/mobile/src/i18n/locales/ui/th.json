@@ -413,5 +413,6 @@
   "Full nutrition on every recipe": "ข้อมูลโภชนาการครบในทุกสูตร",
   "No limit on pantry items": "ไม่จำกัดจำนวนรายการในตู้เก็บของ",
   "You’re going a little fast. Try again in a few minutes.": "คุณทำเร็วไปหน่อย ลองใหม่อีกครั้งในอีกสักครู่",
-  "Loading": "กำลังโหลด"
+  "Loading": "กำลังโหลด",
+  "Swipe the card to see the next or the previous day": "ปัดการ์ดเพื่อดูวันถัดไปหรือวันก่อนหน้า"
 }

@@ -10,7 +10,7 @@ import { Card, IconButton, PrimaryButton, TextButton } from '../../components/Bu
 import { ProgressBar } from '../../components/Controls';
 import { WeekSkeleton } from '../../components/Skeleton';
 import { Mascot } from '../../components/Mascot';
-import { SwipeRow } from '../../components/SwipeRow';
+import { DayDeck } from '../../components/DayDeck';
 import { TabScreen } from '../../components/TabScreen';
 import { applianceName, MEAL_LABELS, type PlannedMeal } from '../../data/mock';
 import { comma, useT } from '../../i18n';
@@ -73,13 +73,19 @@ export default function Week() {
           ) : null}
         </View></Reveal>
       ) : null}
-      {ready && app.plan.length === 21
-        ? Array.from({ length: 7 }, (_, d) => app.plan.slice(d * 3, d * 3 + 3)).map((meals, d) => (
-            <Reveal key={meals[0].day} index={d}>
-              <DayCard meals={meals} />
-            </Reveal>
-          ))
-        : null}
+      {ready && app.plan.length === 21 ? (
+        <Reveal>
+          <DayDeck
+            todayIndex={(new Date().getDay() + 6) % 7}
+            initial={(new Date().getDay() + 6) % 7}
+            days={Array.from({ length: 7 }, (_, d) => app.plan.slice(d * 3, d * 3 + 3)).map((meals) => ({
+              short: meals[0].day,
+              long: meals[0].dayLong,
+              card: <DayCard meals={meals} />,
+            }))}
+          />
+        </Reveal>
+      ) : null}
       {ready && app.plan.length === 21 ? <EstimateNote /> : null}
     </TabScreen>
   );
@@ -150,13 +156,8 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
         <MealTile meal={lunch} />
       </View>
 
-      <SwipeRow
-        background={c.card}
-        start={{ label: t('Recipe'), icon: 'book-outline', background: c.tint, foreground: c.primaryText, onTrigger: () => openRecipe(dinner) }}
-        end={{ label: t('Swap'), icon: 'swap-horizontal', background: c.primary, foreground: c.onPrimary, onTrigger: () => openSwap(dinner, subscribed) }}
-      >
-        <DinnerRow meal={dinner} />
-      </SwipeRow>
+      {/* No swipe actions on dinner any more: sideways drags now move between days. Recipe and swap have buttons. */}
+      <DinnerRow meal={dinner} />
     </Card>
   );
 }
@@ -171,7 +172,7 @@ function MealTile({ meal }: { meal: PlannedMeal }) {
   const type = tx(MEAL_LABELS[meal.type]);
   const name = tx(meal.name);
   return (
-    <View style={[styles.tile, { backgroundColor: c.bg }]}>
+    <View style={[styles.tile, { backgroundColor: c.tint, borderColor: c.line }]}>
       <Pressable
         accessibilityRole="link"
         accessibilityLabel={t('{meal}: {name}', { meal: type, name })}
@@ -217,7 +218,7 @@ function DinnerRow({ meal }: { meal: PlannedMeal }) {
   const type = tx(MEAL_LABELS[meal.type]);
   const name = tx(meal.name);
   return (
-    <View style={styles.dinner}>
+    <View style={[styles.dinner, { borderLeftColor: c.primary, backgroundColor: c.card }]}>
       <Pressable
         accessibilityRole="link"
         accessibilityLabel={t('{meal}: {name}', { meal: type, name })}
@@ -310,18 +311,18 @@ const styles = StyleSheet.create({
   dayCost: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   dayNutrition: { width: '100%', fontVariant: ['tabular-nums'] },
   pair: { flexDirection: 'row', gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 },
-  tile: { flex: 1, minWidth: 0, borderRadius: radius.control, padding: 12, gap: 8, justifyContent: 'space-between' },
+  tile: { flex: 1, minWidth: 0, borderRadius: radius.row, borderWidth: 1, padding: 14, gap: 10, justifyContent: 'space-between' },
   tileBody: { gap: 3, minHeight: 84 },
-  tileName: { fontSize: 16, lineHeight: 21 },
+  tileName: { fontFamily: fonts.displaySemi, fontSize: 19, lineHeight: 24, letterSpacing: -0.3 },
   tileFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tileCost: { fontSize: 16 },
+  tileCost: { fontSize: 18 },
   tileSwap: { width: 32, height: 28, alignItems: 'flex-end', justifyContent: 'center' },
   label: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  dinner: { paddingTop: 12, paddingBottom: 12, paddingLeft: 14, paddingRight: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dinner: { paddingTop: 14, paddingBottom: 14, paddingLeft: 12, paddingRight: 8, flexDirection: 'row', alignItems: 'center', gap: 10, borderLeftWidth: 5 },
   dinnerText: { flex: 1, minWidth: 0, gap: 3 },
-  dinnerName: { fontFamily: fonts.displaySemi, fontSize: 21, lineHeight: 26, letterSpacing: -0.3 },
+  dinnerName: { fontFamily: fonts.display, fontSize: 24, lineHeight: 29, letterSpacing: -0.5 },
   dinnerSide: { alignItems: 'center', gap: 6 },
-  dinnerCost: { fontSize: 20 },
+  dinnerCost: { fontSize: 24 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   centered: { alignItems: 'center', gap: 14, paddingTop: 24 },
   center: { textAlign: 'center' },
