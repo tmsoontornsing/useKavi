@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tmsoontornsing.kavi",
+      "bundleIdentifier": "com.logicbaker.kavi",
       "icon": {
         "light": "./assets/icon.png",
         "dark": "./assets/ios-dark.png",
@@ -59,8 +59,8 @@
       [
         "expo-widgets",
         {
-          "bundleIdentifier": "com.tmsoontornsing.kavi.widgets",
-          "groupIdentifier": "group.com.tmsoontornsing.kavi",
+          "bundleIdentifier": "com.logicbaker.kavi.widgets",
+          "groupIdentifier": "group.com.logicbaker.kavi",
           "enableAndroid": false,
           "widgets": [
             {
