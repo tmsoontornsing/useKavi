@@ -142,7 +142,7 @@ export async function saveProfile(userId: string, p: Profile) {
 
 // ---- Pantry
 
-const SHELF_ORDER = ['Staples', 'Spices', 'Fridge'];
+const SHELF_ORDER = ['Staples', 'Spices', 'Fridge', 'Freezer', 'Produce'];
 
 export async function loadPantry(userId: string): Promise<Shelf[]> {
   const rows = check(await db().from('pantry_items').select('name, shelf').eq('user_id', userId).order('name')) ?? [];
@@ -377,6 +377,8 @@ const serverError = (code: unknown, message: unknown): string => {
       return t('The free plan includes one plan a month.');
     case 'plan_cap':
       return t('You’ve reached this month’s plan limit. It resets on the 1st.');
+    case 'rate_limited':
+      return t('You’re going a little fast. Try again in a few minutes.');
     case 'profile_missing':
       return t('Finish setting up your household first');
     case 'not_enough_recipes':

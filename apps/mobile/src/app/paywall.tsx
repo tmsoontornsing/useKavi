@@ -30,6 +30,8 @@ export default function Paywall() {
     t('A new plan every week, not just one a month'),
     t('Swap any meal and watch the budget update'),
     t('Share the grocery list with everyone at home'),
+    t('Full nutrition on every recipe'),
+    t('No limit on pantry items'),
   ];
 
   // Apple's required renewal terms, one whole paragraph per store so each names its own account and settings the way

@@ -11,7 +11,9 @@ import {
   minCandidates,
   monthStartUtc,
   planTotal,
+  BURST_LIMIT,
   reachedPlanCap,
+  tooFast,
   selectCandidates,
   shuffle,
   SUBSCRIBER_MONTHLY_PLAN_CAP,
@@ -294,4 +296,11 @@ Deno.test("reachedPlanCap stops a subscriber at the monthly cap", () => {
   assertEquals(reachedPlanCap(SUBSCRIBER_MONTHLY_PLAN_CAP), true);
   assertEquals(reachedPlanCap(SUBSCRIBER_MONTHLY_PLAN_CAP + 5), true);
   assertEquals(reachedPlanCap(3, 3), true);
+});
+
+Deno.test("tooFast stops a burst of plan requests", () => {
+  assertEquals(tooFast(0), false);
+  assertEquals(tooFast(BURST_LIMIT - 1), false);
+  assertEquals(tooFast(BURST_LIMIT), true);
+  assertEquals(tooFast(2, 2), true);
 });

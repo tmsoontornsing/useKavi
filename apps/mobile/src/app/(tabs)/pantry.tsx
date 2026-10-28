@@ -1,12 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState, type ComponentProps } from 'react';
-import { Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { AccessibilityInfo, Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { Card, IconButton, TextButton } from '../../components/Buttons';
 import { Mascot } from '../../components/Mascot';
+import { FREE_PANTRY_LIMIT, PlusNotice } from '../../components/PlusLock';
+import { ShelfBadge, ShelfCard } from '../../components/ShelfParts';
 import { TabScreen } from '../../components/TabScreen';
 import { money } from '../../data/mock';
+import { COMMON, guessShelf } from '../../data/pantryCommon';
 import { comma, useT } from '../../i18n';
 import { allergensIn } from '../../lib/allergens';
 import { animateLayout, haptic, PressableScale, Reveal, Wiggle } from '../../motion';
@@ -22,26 +26,10 @@ const SHELVES: { name: string; icon: IconName }[] = [
   { name: 'Spices', icon: 'leaf-outline' },
   { name: 'Fridge', icon: 'snow-outline' },
   { name: 'Freezer', icon: 'cube-outline' },
+  { name: 'Produce', icon: 'nutrition-outline' },
 ];
+const ORDER_KEY = 'kavi.shelfOrder';
 const shelfIcon = (name: string): IconName => SHELVES.find((s) => s.name === name)?.icon ?? 'file-tray-outline';
-
-// Things many kitchens already have, named the way the recipe catalog names them so the grocery list can match them.
-// Saved in English; shown with tx().
-// i18n: content
-const SUGGESTIONS: { name: string; shelf: string }[] = [
-  { name: 'Butter', shelf: 'Fridge' },
-  { name: 'Eggs', shelf: 'Fridge' },
-  { name: 'Milk', shelf: 'Fridge' },
-  { name: 'Soy sauce', shelf: 'Staples' },
-  { name: 'Honey', shelf: 'Staples' },
-  { name: 'Rolled oats', shelf: 'Staples' },
-  { name: 'Spaghetti', shelf: 'Staples' },
-  { name: 'Tomato paste', shelf: 'Staples' },
-  { name: 'Paprika', shelf: 'Spices' },
-  { name: 'Cinnamon', shelf: 'Spices' },
-  { name: 'Italian seasoning', shelf: 'Spices' },
-  { name: 'Frozen corn', shelf: 'Freezer' },
-];
 
 export default function Pantry() {
   const c = useTheme();
@@ -49,14 +37,31 @@ export default function Pantry() {
   // Allergy labels as a phrase inside a sentence: "milk and eggs".
   const allergenNames = (hits: string[]) => hits.map((h) => tx(h).toLowerCase());
   const andList = (hits: string[]) => allergenNames(hits).reduce((a, b) => t('{a} and {b}', { a, b }));
-  const { pantry, pantrySavings, allergies, addPantryItem, removePantryItem } = useApp();
+  const { pantry, pantrySavings, allergies, addPantryItem, removePantryItem, subscribed } = useApp();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const [shelf, setShelf] = useState('Staples');
+  // Once someone taps a shelf themselves, typing stops moving the choice.
+  const picked = useRef(false);
+  // The order the person put the shelves in, saved on the phone. A shelf not in it keeps its default place after the rest.
+  const [order, setOrder] = useState<string[]>([]);
+  // Counts up each time a shelf is moved, so its card lights up in its new spot.
+  const [moved, setMoved] = useState<{ name: string; n: number } | null>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(ORDER_KEY)
+      .then((v) => {
+        const saved = v ? JSON.parse(v) : null;
+        if (Array.isArray(saved)) setOrder(saved.filter((x): x is string => typeof x === 'string'));
+      })
+      .catch(() => {});
+  }, []);
   const count = pantry.reduce((n, s) => n + s.items.length, 0);
-  const have = new Set(pantry.flatMap((s) => s.items.map((i) => i.toLowerCase())));
-  const suggestions = SUGGESTIONS.filter((s) => !have.has(s.name.toLowerCase())).slice(0, 8);
+  // The free plan holds a set number of pantry items; Kavi Plus has no limit.
+  const full = !subscribed && count >= FREE_PANTRY_LIMIT;
+  const common = COMMON[shelf] ?? [];
+  // Which shelf an item already sits on, so tapping a ticked chip takes it off the right one.
+  const shelfOf = (item: string) => pantry.find((s) => s.items.some((i) => i.toLowerCase() === item.toLowerCase()))?.name;
   // Items whose names point to one of the household's allergies, for the warning card and the flagged chips.
   const flagged = pantry.flatMap((s) =>
     s.items.flatMap((item) => {
@@ -66,25 +71,63 @@ export default function Pantry() {
   );
   const draftHits = allergensIn(draft, allergies);
 
+  const rank = (name: string) => {
+    const i = order.indexOf(name);
+    return i < 0 ? 1000 + pantry.findIndex((s) => s.name === name) : i;
+  };
+  const shown = pantry.filter((s) => s.items.length > 0).sort((a, b) => rank(a.name) - rank(b.name));
+
+  // Swaps a shelf with its neighbor. The card slides there and glows so the eye can follow it.
+  const moveShelf = (name: string, by: -1 | 1) => {
+    const names = shown.map((s) => s.name);
+    const from = names.indexOf(name);
+    const to = from + by;
+    if (from < 0 || to < 0 || to >= names.length) return;
+    [names[from], names[to]] = [names[to], names[from]];
+    animateLayout();
+    haptic.select();
+    setOrder(names);
+    setMoved((m) => ({ name, n: (m?.n ?? 0) + 1 }));
+    AsyncStorage.setItem(ORDER_KEY, JSON.stringify(names)).catch(() => {});
+    AccessibilityInfo.announceForAccessibility(t('{shelf} moved to position {n} of {total}', { shelf: tx(name), n: to + 1, total: names.length }));
+  };
+
   // Stays open after each add, so several things can go in one go.
   const submit = () => {
     const name = draft.trim();
     if (!name) return;
+    if (full) return haptic.error();
     animateLayout();
     haptic.success();
     addPantryItem(shelf, name);
     setDraft('');
   };
 
-  const quickAdd = (name: string, onShelf: string) => {
+  // A common item toggles: tap to add it to the shelf showing, tap again to take it off.
+  const toggleCommon = (name: string) => {
     animateLayout();
-    haptic.success();
-    addPantryItem(onShelf, name);
+    const on = shelfOf(name);
+    if (on) {
+      haptic.tap();
+      removePantryItem(on, name);
+    } else if (full) {
+      haptic.error();
+    } else {
+      haptic.success();
+      addPantryItem(shelf, name);
+    }
+  };
+
+  const typeDraft = (text: string) => {
+    setDraft(text);
+    const guess = picked.current ? null : guessShelf(text);
+    if (guess) setShelf(guess);
   };
 
   const closeAdd = () => {
     animateLayout();
     setDraft('');
+    picked.current = false;
     setAdding(false);
   };
 
@@ -104,29 +147,20 @@ export default function Pantry() {
       {adding ? (
         <Reveal>
           <Card style={styles.addCard}>
-            <TextInput
-              autoFocus
-              accessibilityLabel={t('New pantry item')}
-              placeholder={t('Add an item, like brown rice')}
-              placeholderTextColor={c.muted}
-              value={draft}
-              onChangeText={setDraft}
-              onSubmitEditing={submit}
-              returnKeyType="done"
-              blurOnSubmit={false}
-              style={[styles.input, { backgroundColor: c.bg, color: c.text, borderColor: c.control }]}
-            />
-            {draftHits.length > 0 ? (
-              <View style={[styles.note, { backgroundColor: c.warnBg }]} accessibilityRole="alert">
-                <Ionicons name="alert-circle" size={16} color={c.warn} />
-                <AppText variant="footnote" color={c.warn} weight="600" style={styles.flex}>
-                  {t('This looks like it contains {allergens}, which you avoid.', { allergens: andList(draftHits) })}
-                </AppText>
+            <View style={styles.addHead}>
+              <Mascot pose="peek" size={76} decorative tappable />
+              <View style={styles.flex}>
+                <AppText variant="headline" accessibilityRole="header">{t('Stock your pantry')}</AppText>
+                <AppText variant="subhead">{t('Pick a shelf, then tap what you already have. Kavi keeps it off your grocery list.')}</AppText>
               </View>
-            ) : null}
+            </View>
+
+            {full ? <PlusNotice text={t('Free pantries hold {n} items. Kavi Plus has no limit.', { n: FREE_PANTRY_LIMIT })} /> : null}
+
             <View style={styles.pickRow} accessibilityRole="radiogroup" accessibilityLabel={t('Shelf')}>
               {SHELVES.map((s) => {
                 const on = shelf === s.name;
+                const here = pantry.find((p) => p.name === s.name)?.items.length ?? 0;
                 return (
                   <Pressable
                     key={s.name}
@@ -134,43 +168,80 @@ export default function Pantry() {
                     accessibilityState={{ checked: on }}
                     onPress={() => {
                       haptic.select();
+                      picked.current = true;
                       setShelf(s.name);
                     }}
                     style={[styles.pick, { backgroundColor: on ? c.primary : c.bg, borderColor: on ? c.primary : c.control }]}
                   >
                     <Ionicons name={s.icon} size={15} color={on ? c.onPrimary : c.text} />
                     <AppText variant="subhead" weight="600" color={on ? c.onPrimary : c.text}>{tx(s.name)}</AppText>
+                    {here > 0 ? <AppText variant="footnote" weight="600" color={on ? c.onPrimary : c.muted}>{here}</AppText> : null}
                   </Pressable>
                 );
               })}
             </View>
-            {suggestions.length > 0 ? (
-              <View style={styles.quick}>
-                <AppText variant="eyebrow">{t('Many kitchens have')}</AppText>
-                <View style={styles.chips}>
-                  {suggestions.map((s) => {
-                    const hits = allergensIn(s.name, allergies);
-                    return (
-                      <PressableScale
-                        key={s.name}
-                        accessibilityRole="button"
-                        accessibilityLabel={
-                          hits.length
-                            ? t('Add {item} to {shelf}. Contains {allergens}, which you avoid', { item: tx(s.name), shelf: tx(s.shelf), allergens: andList(hits) })
-                            : t('Add {item} to {shelf}', { item: tx(s.name), shelf: tx(s.shelf) })
-                        }
-                        to={0.93}
-                        onPress={() => quickAdd(s.name, s.shelf)}
-                        style={[styles.suggest, { borderColor: hits.length ? c.warn : c.control, backgroundColor: hits.length ? c.warnBg : 'transparent' }]}
-                      >
-                        <Ionicons name={hits.length ? 'alert-circle' : 'add'} size={14} color={hits.length ? c.warn : c.primaryText} />
-                        <AppText variant="subhead" color={hits.length ? c.warn : c.text}>{tx(s.name)}</AppText>
-                      </PressableScale>
-                    );
-                  })}
-                </View>
+
+            <View style={styles.quick}>
+              <AppText variant="eyebrow">{t('Something else? It goes on {shelf}', { shelf: tx(shelf) })}</AppText>
+              <View style={styles.inputRow}>
+                <TextInput
+                  accessibilityLabel={t('New pantry item')}
+                  placeholder={t('Add an item, like brown rice')}
+                  placeholderTextColor={c.muted}
+                  value={draft}
+                  onChangeText={typeDraft}
+                  onSubmitEditing={submit}
+                  returnKeyType="done"
+                  blurOnSubmit={false}
+                  style={[styles.input, styles.flex, { backgroundColor: c.bg, color: c.text, borderColor: c.control }]}
+                />
+                <IconButton icon="add" label={t('Add to {shelf}', { shelf: tx(shelf) })} onPress={submit} />
               </View>
-            ) : null}
+              {draftHits.length > 0 ? (
+                <View style={[styles.note, { backgroundColor: c.warnBg }]} accessibilityRole="alert">
+                  <Ionicons name="alert-circle" size={16} color={c.warn} />
+                  <AppText variant="footnote" color={c.warn} weight="600" style={styles.flex}>
+                    {t('This looks like it contains {allergens}, which you avoid.', { allergens: andList(draftHits) })}
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.quick}>
+              <AppText variant="eyebrow">{t('Common on this shelf')}</AppText>
+              <View style={styles.chips}>
+                {common.map((name) => {
+                  const hits = allergensIn(name, allergies);
+                  const have = !!shelfOf(name);
+                  return (
+                    <PressableScale
+                      key={name}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: have }}
+                      accessibilityLabel={
+                        hits.length ? t('{item}. Contains {allergens}, which you avoid', { item: tx(name), allergens: andList(hits) }) : tx(name)
+                      }
+                      to={0.93}
+                      onPress={() => toggleCommon(name)}
+                      style={[
+                        styles.suggest,
+                        have
+                          ? { borderColor: c.primary, backgroundColor: c.tint, borderStyle: 'solid' }
+                          : { borderColor: hits.length ? c.warn : c.control, backgroundColor: hits.length ? c.warnBg : 'transparent' },
+                      ]}
+                    >
+                      <Ionicons
+                        name={have ? 'checkmark' : hits.length ? 'alert-circle' : 'add'}
+                        size={14}
+                        color={have ? c.primaryText : hits.length ? c.warn : c.primaryText}
+                      />
+                      <AppText variant="subhead" weight={have ? '600' : undefined} color={hits.length && !have ? c.warn : c.text}>{tx(name)}</AppText>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+            </View>
+
             <View style={styles.addActions}>
               <TextButton label={t('Done')} onPress={closeAdd} />
             </View>
@@ -225,14 +296,22 @@ export default function Pantry() {
         </View>
       ) : null}
 
-      {editing ? <AppText variant="footnote" style={styles.editHint}>{t('Tap an item to remove it.')}</AppText> : null}
+      {editing ? (
+        <Reveal lift={6}>
+          <View style={[styles.editBanner, { backgroundColor: c.tint }]}>
+            <Ionicons name="swap-vertical" size={18} color={c.primaryText} />
+            <AppText variant="footnote" color={c.text} style={styles.flex}>
+              {t('Tap an item to remove it. Use the arrows to move a shelf up or down.')}
+            </AppText>
+          </View>
+        </Reveal>
+      ) : null}
 
-      {pantry
-        .filter((s) => s.items.length > 0)
-        .map((s) => (
-          <View key={s.name} style={styles.shelfGroup}>
+      {shown.map((s, si) => (
+        <Reveal key={s.name} index={si}>
+          <ShelfCard pulse={moved?.name === s.name ? moved.n : 0}>
             <View style={styles.shelfHead}>
-              <Ionicons name={shelfIcon(s.name)} size={16} color={c.primaryText} />
+              <ShelfBadge name={s.name} icon={shelfIcon(s.name)} count={s.items.length} index={si} />
               <AppText style={styles.shelfName} accessibilityRole="header">{tx(s.name)}</AppText>
               {flagged.some((f) => f.shelf === s.name) ? (
                 <View style={styles.shelfWarn}>
@@ -240,7 +319,27 @@ export default function Pantry() {
                   <AppText variant="footnote" weight="700" color={c.warn}>{flagged.filter((f) => f.shelf === s.name).length}</AppText>
                 </View>
               ) : null}
-              <AppText variant="subhead" style={styles.shelfCount}>{s.items.length}</AppText>
+              <AppText variant="subhead" style={[styles.shelfCount, { backgroundColor: c.tint, color: c.primaryText }]}>{s.items.length}</AppText>
+              {editing ? (
+                <View style={styles.moveRow}>
+                  {([-1, 1] as const).map((by) => {
+                    const off = by === -1 ? si === 0 : si === shown.length - 1;
+                    return (
+                      <PressableScale
+                        key={by}
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: off }}
+                        accessibilityLabel={by === -1 ? t('Move {shelf} up', { shelf: tx(s.name) }) : t('Move {shelf} down', { shelf: tx(s.name) })}
+                        to={0.85}
+                        onPress={off ? undefined : () => moveShelf(s.name, by)}
+                        style={[styles.move, { backgroundColor: c.tint, opacity: off ? 0.3 : 1 }]}
+                      >
+                        <Ionicons name={by === -1 ? 'chevron-up' : 'chevron-down'} size={18} color={c.primaryText} />
+                      </PressableScale>
+                    );
+                  })}
+                </View>
+              ) : null}
             </View>
             <View style={styles.items}>
               {s.items.map((item, i) => {
@@ -274,8 +373,8 @@ export default function Pantry() {
                       style={({ pressed }) => [
                         styles.item,
                         {
-                          backgroundColor: bad ? c.warnBg : c.card,
-                          borderColor: bad ? c.warn : editing ? c.control : 'transparent',
+                          backgroundColor: bad ? c.warnBg : c.bg,
+                          borderColor: bad ? c.warn : editing ? c.control : c.line,
                           opacity: pressed ? 0.7 : 1,
                         },
                       ]}
@@ -302,8 +401,9 @@ export default function Pantry() {
               accessibilityElementsHidden
               importantForAccessibility="no"
             />
-          </View>
-        ))}
+          </ShelfCard>
+        </Reveal>
+      ))}
     </TabScreen>
   );
 }
@@ -315,6 +415,8 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   addCard: { padding: 14, gap: 12 },
   input: { minHeight: 46, borderWidth: 1.5, borderRadius: radius.control, paddingHorizontal: 12, fontSize: 17, fontFamily: fonts.regular },
+  addHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   pickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pick: { minHeight: 36, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', gap: 6 },
   quick: { gap: 8 },
@@ -331,25 +433,27 @@ const styles = StyleSheet.create({
   warnIcon: { marginTop: 1 },
   shelfWarn: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   itemHit: { marginTop: -1 },
-  shelfGroup: { gap: 6, marginBottom: 12 },
-  shelfHead: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 6 },
+  shelfHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
+  moveRow: { flexDirection: 'row', gap: 6, marginLeft: 2 },
+  move: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  editBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: radius.control, marginBottom: 6 },
   shelfName: { fontFamily: fonts.displaySemi, fontSize: 19, lineHeight: 24, letterSpacing: -0.2, flex: 1 },
-  shelfCount: { fontVariant: ['tabular-nums'] },
-  items: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 8 },
+  shelfCount: { fontVariant: ['tabular-nums'], minWidth: 26, textAlign: 'center', paddingVertical: 2, paddingHorizontal: 8, borderRadius: radius.pill, overflow: 'hidden' },
+  items: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 4, paddingBottom: 6 },
   item: {
-    minHeight: 44,
+    minHeight: 40,
     paddingHorizontal: 14,
-    borderRadius: radius.control,
-    borderWidth: 1.5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     shadowColor: '#13241A',
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
   itemText: { fontSize: 15, fontWeight: '500' },
-  shelf: { width: '100%', height: 30, marginTop: -2 },
+  shelf: { width: '100%', height: 26, marginTop: 4, opacity: 0.9 },
 });

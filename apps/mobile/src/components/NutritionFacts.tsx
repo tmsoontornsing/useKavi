@@ -7,12 +7,13 @@ import { reduceMotion, useCountUp } from '../motion';
 import { fonts, radius, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { Card } from './Buttons';
+import { PlusNotice } from './PlusLock';
 
 // FDA guidance: 20% of the Daily Value or more in one serving is high. Flagged for the ones to limit.
 const LIMIT: NutrientKey[] = ['sat_fat_g', 'cholesterol_mg', 'sodium_mg'];
 
 // Per-serving nutrition for a recipe: calories, where they come from, and the label rows with % Daily Value.
-export function NutritionFacts({ nutrition, serves }: { nutrition: ServingNutrition; serves: number }) {
+export function NutritionFacts({ nutrition, serves, locked = false }: { nutrition: ServingNutrition; serves: number; locked?: boolean }) {
   const c = useTheme();
   const { t, tn, tx } = useT();
   const n = nutrition.perServing;
@@ -46,6 +47,10 @@ export function NutritionFacts({ nutrition, serves }: { nutrition: ServingNutrit
         <AppText variant="subhead">{t('calories per serving')}</AppText>
       </View>
 
+      {locked ? (
+        <PlusNotice text={t('Protein, carbs, fat, sodium and % Daily Value are part of Kavi Plus.')} />
+      ) : (
+        <>
       <View
         accessible
         accessibilityLabel={t('Calories from protein {protein}%, carbs {carbs}%, fat {fat}%', {
@@ -113,6 +118,9 @@ export function NutritionFacts({ nutrition, serves }: { nutrition: ServingNutrit
           );
         })}
       </View>
+
+        </>
+      )}
 
       <AppText variant="footnote">
         {tn(

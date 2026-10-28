@@ -216,6 +216,12 @@ export function monthStartUtc(now: Date = new Date()): string {
 // and stops one account from running up AI cost. A request counts when it is made, whether or not the model succeeds.
 export const SUBSCRIBER_MONTHLY_PLAN_CAP = 25;
 
+// No more than this many plan requests in a row within the window, for anyone. It stops a loop or a script from
+// running up the AI bill long before the monthly cap would.
+export const BURST_LIMIT = 5;
+export const BURST_WINDOW_MS = 10 * 60 * 1000;
+export const tooFast = (count: number, limit: number = BURST_LIMIT): boolean => count >= limit;
+
 export const reachedPlanCap = (count: number, cap: number = SUBSCRIBER_MONTHLY_PLAN_CAP): boolean => count >= cap;
 
 export function hasActiveSubscription(rows: { status: string; period_end: string | null }[], now: Date = new Date()): boolean {

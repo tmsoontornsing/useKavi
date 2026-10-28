@@ -2,6 +2,7 @@ import { basicProvider, providerFromEnv } from "../_shared/adapters.ts";
 import { loadProfile, loadRecipes } from "../_shared/data.ts";
 import { asCaller, fail, json } from "../_shared/http.ts";
 import {
+  BURST_WINDOW_MS,
   defaultWeekStart,
   hasActiveSubscription,
   isMonday,
@@ -10,9 +11,10 @@ import {
   planTotal,
   reachedPlanCap,
   selectCandidates,
+  tooFast,
   validateWeek,
 } from "../_shared/plan-logic.ts";
-import { MEAL_TYPES, type Plan, type PlanInput, type PlanProvider } from "../_shared/provider.ts";
+import { MEAL_TYPES, type Plan, type PlanInput, type PlanProvider, type Usage } from "../_shared/provider.ts";
 
 // POST { week_start?: "YYYY-MM-DD" }  (a Monday; defaults to the upcoming Monday, in UTC)
 // Authorization: Bearer <the signed-in user's access token>
@@ -45,6 +47,18 @@ Deno.serve(async (req) => {
     return fail("generate-plan", "read_failed", (e as Error).message);
   }
   if (!profile) return json({ error: "profile_missing", message: "Finish setting up your household first" }, 409);
+
+  // Anyone, free or paid: a short burst limit, so a loop or a script cannot run up the AI bill before the monthly limits
+  // below would notice. Like the cap, a failed count lets the request through.
+  const { count: recent, error: burstError } = await db
+    .from("plan_generations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", new Date(Date.now() - BURST_WINDOW_MS).toISOString());
+  if (burstError) console.error(`generate-plan: burst count failed: ${burstError.message}`);
+  else if (tooFast(recent ?? 0)) {
+    return json({ error: "rate_limited", message: "You’re going a little fast. Try again in a few minutes." }, 429);
+  }
 
   // Free plan: one plan per calendar month. Paid plan: a monthly cap on plan requests, counted in plan_generations
   // because regenerating a week replaces its meal_plans row.
@@ -96,7 +110,7 @@ Deno.serve(async (req) => {
   };
 
   // Count the request before the model runs: a failed attempt still costs money.
-  const { error: logError } = await db.from("plan_generations").insert({ user_id: userId });
+  const { data: logged, error: logError } = await db.from("plan_generations").insert({ user_id: userId }).select("id").single();
   if (logError) console.error(`generate-plan: could not record the request: ${logError.message}`);
 
   // A model can return a malformed or repetitive week: allow it one retry, then fall back to the
@@ -110,18 +124,36 @@ Deno.serve(async (req) => {
   }
   providers.push(basicProvider());
   let plan: Plan | null = null;
+  // What the model calls used, retries included, and which provider's week was kept.
+  const used = { provider: "none", model: "", inputTokens: 0, outputTokens: 0 };
+  const onUsage = (u: Usage) => {
+    used.model = u.model;
+    used.inputTokens += u.inputTokens;
+    used.outputTokens += u.outputTokens;
+  };
   for (const provider of providers) {
     try {
-      const attempt = await provider.generate(input);
+      const attempt = await provider.generate(input, onUsage);
       const problem = validateWeek(attempt);
       if (!problem) {
         plan = attempt;
+        used.provider = provider.name;
         break;
       }
       console.error(`generate-plan: ${provider.name} returned an unusable week: ${problem}`);
     } catch (e) {
       console.error(`generate-plan: ${provider.name} failed: ${(e as Error).message}`);
     }
+  }
+  // Record the cost whether or not a plan came out: a failed attempt is billed too. Logged as well as saved, so it shows
+  // in the function logs if the row could not be updated.
+  console.log(`generate-plan: usage ${JSON.stringify(used)}`);
+  if (logged?.id) {
+    const { error: usageError } = await db
+      .from("plan_generations")
+      .update({ provider: used.provider, model: used.model || null, input_tokens: used.inputTokens, output_tokens: used.outputTokens })
+      .eq("id", logged.id);
+    if (usageError) console.error(`generate-plan: could not record usage: ${usageError.message}`);
   }
   if (!plan) return json({ error: "plan_generation_failed", message: "Could not build a plan. Try again." }, 502);
 

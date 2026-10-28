@@ -5,7 +5,7 @@ import { buildPrompt, parsePlan, type PlanInput, type PlanProvider } from "./pro
 export function claudeProvider(apiKey: string, model = "claude-sonnet-5-5"): PlanProvider {
   return {
     name: "claude",
-    async generate(input: PlanInput) {
+    async generate(input: PlanInput, onUsage) {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -21,6 +21,7 @@ export function claudeProvider(apiKey: string, model = "claude-sonnet-5-5"): Pla
       });
       if (!res.ok) throw new Error(`Claude request failed: ${res.status}`);
       const data = await res.json();
+      onUsage?.({ model, inputTokens: data.usage?.input_tokens ?? 0, outputTokens: data.usage?.output_tokens ?? 0 });
       const text = data.content?.find((b: { type: string }) => b.type === "text")?.text ?? "";
       return parsePlan(text, input);
     },

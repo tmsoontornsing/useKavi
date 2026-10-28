@@ -18,8 +18,9 @@ export function backOr(href: Href) {
 // iOS presents modals as page sheets below the status bar; Android shows them full screen.
 export const modalEdges: Edge[] = Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom'];
 
-export function share(message: string) {
-  Share.share({ message }).catch(() => {});
+// Opens the system share sheet, which lists whatever apps the phone has: Messages, Notes, Mail, WhatsApp and so on.
+export function share(message: string, title?: string) {
+  Share.share({ message, title }).catch(() => {});
 }
 
 export function openUrl(url: string) {

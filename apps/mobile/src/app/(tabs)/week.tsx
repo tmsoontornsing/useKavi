@@ -5,8 +5,10 @@ import { AccessibilityInfo, Animated, Image, Pressable, StyleSheet, View } from 
 
 import { AppText } from '../../components/AppText';
 import { EstimateNote } from '../../components/EstimateNote';
+import { usePlusLabel } from '../../components/PlusLock';
 import { Card, IconButton, PrimaryButton, TextButton } from '../../components/Buttons';
 import { ProgressBar } from '../../components/Controls';
+import { WeekSkeleton } from '../../components/Skeleton';
 import { Mascot } from '../../components/Mascot';
 import { SwipeRow } from '../../components/SwipeRow';
 import { TabScreen } from '../../components/TabScreen';
@@ -39,7 +41,7 @@ export default function Week() {
 
   return (
     <TabScreen tab="week" header={header}>
-      {app.planStatus === 'loading' ? <LoadingState /> : null}
+      {app.planStatus === 'loading' ? <WeekSkeleton /> : null}
       {app.planStatus === 'empty' ? (
         <Reveal><View style={styles.centered}>
           <Mascot pose="sleep" size={150} decorative />
@@ -87,7 +89,9 @@ const MEAL_ICON = { breakfast: 'sunny-outline', lunch: 'partly-sunny-outline', d
 
 const openRecipe = (meal: PlannedMeal) =>
   router.push({ pathname: '/recipe/[id]', params: { id: meal.id, slot: String(meal.slot) } });
-const openSwap = (meal: PlannedMeal) => router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } });
+// Swapping a meal is part of Kavi Plus: free users are taken to what Plus adds instead.
+const openSwap = (meal: PlannedMeal, plus: boolean) =>
+  plus ? router.push({ pathname: '/swap/[slot]', params: { slot: String(meal.slot) } }) : router.push('/plus');
 
 // Equipment the household lacks, as a warning line, or null when the meal is cookable.
 function useMissing(meal: PlannedMeal) {
@@ -105,6 +109,7 @@ function useMissing(meal: PlannedMeal) {
 // small tiles; dinner, the meal the day builds toward, gets the full-width row. Today's card is tinted and tagged.
 function DayCard({ meals }: { meals: PlannedMeal[] }) {
   const c = useTheme();
+  const { subscribed } = useApp();
   const { t, tx, locale } = useT();
   const [breakfast, lunch, dinner] = meals;
   const total = meals.reduce((sum, m) => sum + m.cost, 0);
@@ -129,11 +134,13 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
         </View>
         {day ? (
           <AppText variant="footnote" style={styles.dayNutrition}>
-            {t('Per person {kcal} cal · {protein} g protein · {sodium} mg sodium', {
-              kcal: labelRound('kcal', day.kcal).toLocaleString(locale),
-              protein: labelRound('protein_g', day.protein_g),
-              sodium: labelRound('sodium_mg', day.sodium_mg).toLocaleString(locale),
-            })}
+            {subscribed
+              ? t('Per person {kcal} cal · {protein} g protein · {sodium} mg sodium', {
+                  kcal: labelRound('kcal', day.kcal).toLocaleString(locale),
+                  protein: labelRound('protein_g', day.protein_g),
+                  sodium: labelRound('sodium_mg', day.sodium_mg).toLocaleString(locale),
+                })
+              : t('Per person {kcal} cal', { kcal: labelRound('kcal', day.kcal).toLocaleString(locale) })}
           </AppText>
         ) : null}
       </View>
@@ -146,7 +153,7 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
       <SwipeRow
         background={c.card}
         start={{ label: t('Recipe'), icon: 'book-outline', background: c.tint, foreground: c.primaryText, onTrigger: () => openRecipe(dinner) }}
-        end={{ label: t('Swap'), icon: 'swap-horizontal', background: c.primary, foreground: c.onPrimary, onTrigger: () => openSwap(dinner) }}
+        end={{ label: t('Swap'), icon: 'swap-horizontal', background: c.primary, foreground: c.onPrimary, onTrigger: () => openSwap(dinner, subscribed) }}
       >
         <DinnerRow meal={dinner} />
       </SwipeRow>
@@ -157,6 +164,8 @@ function DayCard({ meals }: { meals: PlannedMeal[] }) {
 // Breakfast or lunch as a compact tile: the dish, a time and calorie line, its cost, and a swap button.
 function MealTile({ meal }: { meal: PlannedMeal }) {
   const c = useTheme();
+  const { subscribed } = useApp();
+  const plusLabel = usePlusLabel();
   const { t, tx, minutes } = useT();
   const missing = useMissing(meal);
   const type = tx(MEAL_LABELS[meal.type]);
@@ -186,12 +195,12 @@ function MealTile({ meal }: { meal: PlannedMeal }) {
         <AppText variant="money" style={styles.tileCost}>{`$${meal.cost}`}</AppText>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('Swap {day} {meal}: {name}', { day: tx(meal.dayLong), meal: type.toLowerCase(), name })}
+          accessibilityLabel={plusLabel(t('Swap {day} {meal}: {name}', { day: tx(meal.dayLong), meal: type.toLowerCase(), name }), subscribed)}
           hitSlop={10}
-          onPress={() => openSwap(meal)}
+          onPress={() => openSwap(meal, subscribed)}
           style={({ pressed }) => [styles.tileSwap, { opacity: pressed ? 0.5 : 1 }]}
         >
-          <Ionicons name="swap-horizontal" size={18} color={c.primaryText} />
+          <Ionicons name={subscribed ? 'swap-horizontal' : 'lock-closed-outline'} size={18} color={c.primaryText} />
         </Pressable>
       </View>
     </View>
@@ -201,6 +210,8 @@ function MealTile({ meal }: { meal: PlannedMeal }) {
 // Dinner: the day's main meal, in the display face and full width.
 function DinnerRow({ meal }: { meal: PlannedMeal }) {
   const c = useTheme();
+  const { subscribed } = useApp();
+  const plusLabel = usePlusLabel();
   const { t, tx, minutes } = useT();
   const missing = useMissing(meal);
   const type = tx(MEAL_LABELS[meal.type]);
@@ -234,9 +245,9 @@ function DinnerRow({ meal }: { meal: PlannedMeal }) {
       <View style={styles.dinnerSide}>
         <AppText variant="money" style={styles.dinnerCost}>{`$${meal.cost}`}</AppText>
         <IconButton
-          icon="swap-horizontal"
-          label={t('Swap {day} {meal}: {name}', { day: tx(meal.dayLong), meal: type.toLowerCase(), name })}
-          onPress={() => openSwap(meal)}
+          icon={subscribed ? 'swap-horizontal' : 'lock-closed-outline'}
+          label={plusLabel(t('Swap {day} {meal}: {name}', { day: tx(meal.dayLong), meal: type.toLowerCase(), name }), subscribed)}
+          onPress={() => openSwap(meal, subscribed)}
         />
       </View>
     </View>
@@ -284,49 +295,6 @@ function BudgetCard({ over }: { over: boolean }) {
   );
 }
 
-function LoadingState() {
-  const c = useTheme();
-  const { t } = useT();
-  const pulse = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    let loop: Animated.CompositeAnimation | undefined;
-    let cancelled = false;
-    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-      if (reduce || cancelled) return;
-      loop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, { toValue: 0.55, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
-        ]),
-      );
-      loop.start();
-    });
-    return () => {
-      cancelled = true;
-      loop?.stop();
-    };
-  }, [pulse]);
-
-  return (
-    <View accessibilityRole="progressbar" accessibilityLabel={t('Building your plan')} style={styles.loading}>
-      <View style={styles.cooking}>
-        <Mascot pose="cook" size={130} decorative />
-        <AppText variant="subhead" style={styles.center}>{t('Pip is building your plan from 300 recipes…')}</AppText>
-      </View>
-      {['70%', '55%', '80%', '62%', '74%', '58%'].map((w) => (
-        <Animated.View key={w} style={[styles.skeleton, { backgroundColor: c.card, opacity: pulse }]}>
-          <View style={[styles.bar, { width: 30, height: 12, backgroundColor: c.track }]} />
-          <View style={styles.flex}>
-            <View style={[styles.bar, { width: w as `${number}%`, height: 14, backgroundColor: c.track }]} />
-            <View style={[styles.bar, { width: '30%', height: 10, backgroundColor: c.track }]} />
-          </View>
-        </Animated.View>
-      ))}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: 8 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -357,10 +325,8 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   centered: { alignItems: 'center', gap: 14, paddingTop: 24 },
   center: { textAlign: 'center' },
-  loading: { gap: 8 },
   cooking: { alignItems: 'center', gap: 4, paddingBottom: 8 },
   underRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: -14 },
   cheer: { marginRight: -8 },
-  skeleton: { height: 64, borderRadius: radius.row, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
   bar: { borderRadius: 6 },
 });

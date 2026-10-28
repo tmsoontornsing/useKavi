@@ -35,9 +35,17 @@ export interface PlanInput {
   candidates: Record<MealType, Candidate[]>;
 }
 
+// Tokens a model call used, as the provider reports them. Only paid providers have any.
+export interface Usage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface PlanProvider {
   name: string;
-  generate(input: PlanInput): Promise<Plan>;
+  // `onUsage` is told what a call cost, even when the week it returned turns out to be unusable.
+  generate(input: PlanInput, onUsage?: (usage: Usage) => void): Promise<Plan>;
 }
 
 function buildPrompt(input: PlanInput): string {

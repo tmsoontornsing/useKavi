@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { EstimateNote } from '../../components/EstimateNote';
 import { Card, PrimaryButton, TextButton } from '../../components/Buttons';
 import { RadioDot } from '../../components/Controls';
+import { Bone } from '../../components/Skeleton';
 import { Mascot } from '../../components/Mascot';
 import { MEAL_LABELS, type Meal } from '../../data/mock';
 import { useT } from '../../i18n';
@@ -47,7 +48,12 @@ export default function Swap() {
     // Load once per sheet; later changes to the plan should not reshuffle the choices.
   }, [slot]);
 
-  if (!current) return null;
+  // The swap sheet is a Kavi Plus feature, so a free user who lands here (a link, an old tab) is sent to what Plus adds.
+  useEffect(() => {
+    if (!app.subscribed) router.replace('/plus');
+  }, [app.subscribed]);
+
+  if (!current || !app.subscribed) return null;
   const chosen = options?.find((o) => o.id === pick);
   const newTotal = app.planTotal - current.cost + (chosen?.cost ?? current.cost);
   // The new total is drawn bold, so the sentence is split where it goes.
@@ -89,7 +95,11 @@ export default function Swap() {
         <View style={styles.group}>
           <AppText variant="eyebrow" accessibilityRole="header">{t('Swap for')}</AppText>
           {options === null && !error ? (
-            <ActivityIndicator accessibilityLabel={t('Finding options')} color={c.primary} style={styles.loading} />
+            <View style={styles.loading}>
+              {[0, 1, 2].map((i) => (
+                <Bone key={i} height={84} round={radius.row} />
+              ))}
+            </View>
           ) : null}
           {error ? (
             <View accessibilityRole="alert">
@@ -174,7 +184,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.gutter, paddingVertical: 12, gap: 16 },
   now: { borderRadius: radius.row, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   group: { gap: 8 },
-  loading: { paddingVertical: 24 },
+  loading: { paddingVertical: 24, gap: 10 },
   none: { padding: 16, gap: 4, alignItems: 'flex-start' },
   option: {
     minHeight: 64,

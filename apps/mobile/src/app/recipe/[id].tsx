@@ -1,14 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/AppText';
 import { EstimateNote } from '../../components/EstimateNote';
+import { usePlusLabel } from '../../components/PlusLock';
 import { Card, TextButton } from '../../components/Buttons';
 import { Mascot } from '../../components/Mascot';
 import { NutritionFacts } from '../../components/NutritionFacts';
+import { Bone, RecipeSkeleton } from '../../components/Skeleton';
 import { applianceName, MEAL_LABELS, money, type RecipeView } from '../../data/mock';
 import { comma, useT } from '../../i18n';
 import { animateLayout, haptic, PressableScale, Reveal } from '../../motion';
@@ -23,6 +25,7 @@ export default function Recipe() {
   const c = useTheme();
   const app = useApp();
   const { t, tx, line, minutes, midSentence, lang } = useT();
+  const plusLabel = usePlusLabel();
   const { id, slot } = useLocalSearchParams<{ id: string; slot?: string }>();
   const slotIndex = slot !== undefined && Number.isInteger(Number(slot)) ? Number(slot) : undefined;
   // Opened from a slot in the plan, follow that slot so a swap updates this screen too.
@@ -55,7 +58,7 @@ export default function Recipe() {
     return (
       <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
         {view === undefined ? (
-          <ActivityIndicator accessibilityLabel={t('Loading recipe')} color={c.primary} style={styles.missing} />
+          <RecipeSkeleton />
         ) : (
           <AppText style={styles.missing}>{t('This recipe isn’t available.')}</AppText>
         )}
@@ -85,10 +88,11 @@ export default function Recipe() {
         {planned ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/swap/[slot]', params: { slot: String(slotIndex) } })}
+            accessibilityLabel={plusLabel(t('Swap {meal}', { meal: midSentence(tx(MEAL_LABELS[planned.type])) }), app.subscribed)}
+            onPress={() => (app.subscribed ? router.push({ pathname: '/swap/[slot]', params: { slot: String(slotIndex) } }) : router.push('/plus'))}
             style={({ pressed }) => [styles.swap, { backgroundColor: c.tint, opacity: pressed ? 0.7 : 1 }]}
           >
-            <Ionicons name="swap-horizontal" size={18} color={c.primaryText} />
+            <Ionicons name={app.subscribed ? 'swap-horizontal' : 'lock-closed-outline'} size={18} color={c.primaryText} />
             <AppText variant="subhead" weight="600" color={c.primaryText}>{t('Swap {meal}', { meal: midSentence(tx(MEAL_LABELS[planned.type])) })}</AppText>
           </Pressable>
         ) : null}
@@ -191,7 +195,7 @@ export default function Recipe() {
             {detail.nutrition ? (
               <View style={styles.section}>
                 <AppText variant="eyebrow" accessibilityRole="header">{t('Nutrition')}</AppText>
-                <NutritionFacts nutrition={detail.nutrition} serves={detail.serves} />
+                <NutritionFacts nutrition={detail.nutrition} serves={detail.serves} locked={!app.subscribed} />
               </View>
             ) : null}
 
@@ -243,7 +247,7 @@ export default function Recipe() {
             </View>
           </>
         ) : view === undefined ? (
-          <ActivityIndicator accessibilityLabel={t('Loading ingredients and steps')} color={c.primary} />
+          <Bone width="100%" height={140} round={radius.card} />
         ) : (
           <Card style={styles.pending}>
             <AppText color={c.muted}>{t('Ingredients and steps for this meal aren’t available yet.')}</AppText>

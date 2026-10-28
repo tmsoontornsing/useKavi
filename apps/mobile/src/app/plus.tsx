@@ -1,13 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../components/AppText';
 import { Card, IconButton, PrimaryButton } from '../components/Buttons';
 import { CheckCircle, ProgressBar } from '../components/Controls';
 import { Mascot, type MascotPose } from '../components/Mascot';
+import { Float, Glint, Orbs, ScrollReveal, Sparkles, Twinkle, WordRise, Wobble } from '../components/PlusMotion';
 import { PLANS } from '../data/mock';
 import { useT } from '../i18n';
 import { haptic, PressableScale, reduceMotion, Reveal, useCountUp } from '../motion';
@@ -23,6 +24,12 @@ export default function Plus() {
   const c = useTheme();
   const app = useApp();
   const { t, tx } = useT();
+  // The page's scroll position, which drives the Pip's parallax and each card's entrance.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const price = Math.round(useCountUp(annual.price));
+
+  // What else Plus adds beyond the two demos above.
+  const extras = [t('Full nutrition on every recipe'), t('No limit on pantry items')];
 
   // What stays free, kept short so it reads at a glance.
   const keeps = [
@@ -30,25 +37,48 @@ export default function Plus() {
     t('Diet and allergy filters'),
     t('Foods you like'),
     t('Kitchen-aware recipes'),
-    t('Nutrition on every recipe'),
+    t('Calories on every recipe'),
     t('A list that skips your pantry'),
   ];
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
+      <Orbs />
       <View style={styles.bar}>
         <IconButton icon="chevron-back" label={t('Back to Settings')} tone="card" onPress={() => backOr('/settings')} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+      >
         <Reveal>
           <View style={styles.hero}>
-            <Mascot pose="cheer" size={124} tappable label={t('Pip, Kavi\'s jar, cheering')} style={styles.pip} />
+            {/* Pip floats among twinkling stars, and drifts up and shrinks a little as the page scrolls. */}
+            <Animated.View
+              style={[
+                styles.pipStage,
+                {
+                  transform: [
+                    { translateY: scrollY.interpolate({ inputRange: [0, 300], outputRange: [0, 70], extrapolate: 'clamp' }) },
+                    { scale: scrollY.interpolate({ inputRange: [0, 300], outputRange: [1, 0.78], extrapolate: 'clamp' }) },
+                  ],
+                },
+              ]}
+            >
+              <Sparkles />
+              <Float by={9}>
+                <Mascot pose="cheer" size={124} tappable label={t('Pip, Kavi\'s jar, cheering')} />
+              </Float>
+            </Animated.View>
             <View style={styles.heroText}>
               <AppText variant="eyebrow" color={c.primaryText}>Kavi Plus</AppText>
-              <AppText style={styles.headline} accessibilityRole="header">
-                {app.subscribed ? t('You have everything.') : t('A plan for every week.')}
-              </AppText>
+              <WordRise
+                style={styles.headline}
+                text={app.subscribed ? t('You have everything.') : t('A plan for every week.')}
+              />
             </View>
           </View>
           <AppText color={c.muted} style={styles.lede}>
@@ -62,7 +92,7 @@ export default function Plus() {
           <WeekGrid />
         </Reveal>
 
-        <Reveal index={2}>
+        <ScrollReveal scrollY={scrollY} from="left">
           <Benefit
             title={t('Swap any meal, watch the budget move')}
             body={t('Change a dinner and the week’s total and your grocery list follow.')}
@@ -70,9 +100,9 @@ export default function Plus() {
           >
             <SwapDemo />
           </Benefit>
-        </Reveal>
+        </ScrollReveal>
 
-        <Reveal index={3}>
+        <ScrollReveal scrollY={scrollY} from="right">
           <Benefit
             title={t('Share the list with everyone at home')}
             body={t('Invite the people you shop with. They see the same list and check things off as they go.')}
@@ -80,9 +110,23 @@ export default function Plus() {
           >
             <ShareDemo />
           </Benefit>
-        </Reveal>
+        </ScrollReveal>
 
-        <Reveal index={4}>
+        <ScrollReveal scrollY={scrollY} from="left">
+          <View style={styles.keeps}>
+            <AppText style={styles.sectionTitle} accessibilityRole="header">{t('Also in Plus')}</AppText>
+            <View style={styles.pills}>
+              {extras.map((k, i) => (
+                <View key={k} style={[styles.pill, { backgroundColor: c.tint }]}>
+                  <Twinkle delay={i * 450} color={c.primaryText} />
+                  <AppText variant="subhead" color={c.text}>{k}</AppText>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollReveal>
+
+        <ScrollReveal scrollY={scrollY} from="up">
           <View style={styles.keeps}>
             <AppText style={styles.sectionTitle} accessibilityRole="header">{t('Included free')}</AppText>
             <View style={styles.pills}>
@@ -94,24 +138,28 @@ export default function Plus() {
               ))}
             </View>
           </View>
-        </Reveal>
-      </ScrollView>
+        </ScrollReveal>
+      </Animated.ScrollView>
 
       {app.subscribed ? null : (
         <View style={[styles.footer, { borderTopColor: c.line, backgroundColor: c.bg }]}>
           <View style={styles.priceRow}>
             <View style={styles.flex}>
-              <AppText style={styles.price}>{t('{price} a year', { price: `$${annual.price}` })}</AppText>
+              <AppText style={styles.price}>{t('{price} a year', { price: `$${price}` })}</AppText>
               <AppText variant="footnote">{t('About {price} a month, billed yearly', { price: '$4.92' })}</AppText>
             </View>
             <Pulse>
-              <View style={[styles.save, { backgroundColor: c.badge }]}>
-                <AppText variant="footnote" weight="700" color={c.badgeText}>{tx(annual.badge)}</AppText>
-              </View>
+              <Wobble>
+                <View style={[styles.save, { backgroundColor: c.badge }]}>
+                  <AppText variant="footnote" weight="700" color={c.badgeText}>{tx(annual.badge)}</AppText>
+                </View>
+              </Wobble>
             </Pulse>
           </View>
           <Nudge>
-            <PrimaryButton label={t('Get Kavi Plus')} feedback="success" onPress={() => router.push('/paywall')} />
+            <Glint>
+              <PrimaryButton label={t('Get Kavi Plus')} feedback="success" onPress={() => router.push('/paywall')} />
+            </Glint>
           </Nudge>
           <AppText variant="footnote" style={styles.center}>
             {Platform.OS === 'ios'
@@ -375,7 +423,7 @@ const styles = StyleSheet.create({
   bar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, flexDirection: 'row' },
   content: { paddingHorizontal: space.gutter, paddingTop: 4, paddingBottom: 24, gap: 18 },
   hero: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  pip: { marginLeft: -12 },
+  pipStage: { width: 124, height: 124, marginLeft: -12 },
   heroText: { flex: 1, gap: 4 },
   headline: { fontFamily: fonts.display, fontSize: 34, lineHeight: 38, letterSpacing: -0.8 },
   lede: { fontSize: 17, lineHeight: 24, marginTop: 4 },

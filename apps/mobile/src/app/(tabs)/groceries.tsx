@@ -1,9 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Image, Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { EstimateNote } from '../../components/EstimateNote';
+import { usePlusLabel } from '../../components/PlusLock';
 import { Card, IconButton } from '../../components/Buttons';
 import { CheckCircle, ProgressBar } from '../../components/Controls';
 import { Mascot } from '../../components/Mascot';
@@ -40,7 +42,11 @@ function Chevron({ open }: { open: boolean }) {
 export default function Groceries() {
   const c = useTheme();
   const { t, tn, tx, line } = useT();
-  const { checked, toggleChecked, groceries, groceryTotal, pantrySavings, pantry } = useApp();
+  const { checked, toggleChecked, groceries, groceryTotal, pantrySavings, pantry, subscribed } = useApp();
+  const plusLabel = usePlusLabel();
+  // Sharing and exporting the list are part of Kavi Plus.
+  // Free users see the normal icons; tapping one opens the paywall as a modal.
+  const seePlus = () => router.push('/paywall');
   const [open, setOpen] = useState<Record<string, boolean>>({ Produce: true });
 
   const all = groceries.flatMap((a) => a.items);
@@ -94,7 +100,7 @@ export default function Groceries() {
     const text = groceries.map(
       (a) => `${tx(a.name)}\n${a.items.map((i) => `${checked[i.key] ? '✓' : '•'} ${line(i.name)}`).join('\n')}`,
     ).join('\n\n');
-    shareText(`${t('Kavi grocery list')}\n\n${text}`);
+    shareText(`${t('Kavi grocery list')}\n\n${text}`, t('Kavi grocery list'));
   };
 
   // The total sits in the header because the floating iOS tab bar would cover a pinned footer.
@@ -103,9 +109,17 @@ export default function Groceries() {
       <View style={styles.headRow}>
         <AppText variant="largeTitle" accessibilityRole="header" style={styles.flex}>{t('Grocery List')}</AppText>
         {remindersAvailable ? (
-          <IconButton icon="checkbox-outline" label={t('Add list to Reminders')} onPress={toReminders} />
+          <IconButton
+            icon="checkbox-outline"
+            label={plusLabel(t('Add list to Reminders'), subscribed)}
+            onPress={subscribed ? toReminders : seePlus}
+          />
         ) : null}
-        <IconButton icon="share-outline" label={t('Share list with your household')} onPress={share} />
+        <IconButton
+          icon="share-outline"
+          label={plusLabel(t('Share your grocery list'), subscribed)}
+          onPress={subscribed ? share : seePlus}
+        />
       </View>
       <View style={[styles.summary, { backgroundColor: c.card }]}>
         <View style={styles.flex}>
